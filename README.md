@@ -44,7 +44,7 @@ pip install -r requirements.txt
 ```
 #### Help
 ```
-usage: fuzzowski.py [-h] [-p {tcp,udp,ssl}] [-b BIND] [-st SEND_TIMEOUT]
+usage: python -m fuzzowski [-h] [-p {tcp,udp,ssl}] [-b BIND] [-st SEND_TIMEOUT]
                     [-rt RECV_TIMEOUT] [--sleep-time SLEEP_TIME] [-nc] [-tn]
                     [-nr] [-nrf] [-cr]
                     [--threshold-request CRASH_THRESHOLD_REQUEST]
