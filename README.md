@@ -1,5 +1,5 @@
 #  Fuzzowski
-
+```
        █      █       
        ████████       
       ██████████      
@@ -10,6 +10,7 @@
    █  ██████████  █   Fuzzowski Network Fuzzer
    █    █     █   █           🄯  Fuzzers, inc.
        ██     ██       
+```
 
 The idea is to be the Network Protocol Fuzzer that we will __want__ to use.
 
