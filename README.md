@@ -1,0 +1,172 @@
+#  Fuzzowski
+
+       █      █       
+       ████████       
+      ██████████      
+     ██  ████  ██     
+     ██  ████  ██     
+    ████      ████    
+   █ ████████████ █   
+   █  ██████████  █   Fuzzowski Network Fuzzer
+   █    █     █   █           🄯  Fuzzers, inc.
+       ██     ██       
+
+The idea is to be the Network Protocol Fuzzer that we will __want__ to use.
+
+The aim of this tool is to assist during the whole process of fuzzing a network protocol, 
+allowing to define the communications, helping to identify the "suspects" of crashing a service,
+and much more
+
+#### Features
+* Based on Sulley Fuzzer for data generation [https://github.com/OpenRCE/sulley]
+* Actually, forked BooFuzz (which is a fork of Sulley) [https://github.com/jtpereyda/boofuzz ]
+* Python3
+* Improved Strings fuzzing libraries, allowing also for custom lists, files and callback commands
+* Not random (finite number of possibilities)
+* Requires to “create the packets” with types (spike fuzzer style)
+* Also allows to create ""Raw"" packets from parameters, with injection points (quite useful for fuzzing simple protocols)
+* Has a nice console to pause, review and retest any suspect (prompt_toolkit ftw)
+* Allows to skip parameters that cause errors, automatically or with the console
+* Nice print formats for suspect packets (to know exactly what was fuzzed)
+* It saves PoCs as python scripts for you when you mark a test case as a crash
+* Monitor modules to gather information of the target, detecting odd behaviours and marking suspects
+* Restarter modules that will restart the target if the connection is lost (e.g. powering off and on an smart plug)
+
+#### Protocols implemented
+* **LPD (Line Printing Daemon)**: Fully implemented
+
+#### Installation
+```
+virtualenv venv -p python3
+source venv/bin/activate
+pip install -r requirements.txt
+```
+#### Help
+```
+usage: fuzzowski.py [-h] [-p {tcp,udp,ssl}] [-b BIND] [-st SEND_TIMEOUT]
+                    [-rt RECV_TIMEOUT] [--sleep-time SLEEP_TIME] [-nc] [-tn]
+                    [-nr] [-nrf] [-cr]
+                    [--threshold-request CRASH_THRESHOLD_REQUEST]
+                    [--threshold-element CRASH_THRESHOLD_ELEMENT]
+                    [--ignore-aborted] [--ignore-reset] [--error-fuzz-issues]
+                    [-c CALLBACK | --file FILENAME] -f
+                    {cops,dhcp,ipp,lpd,netconf,telnet_cli,tftp,raw}
+                    [-r FUZZ_REQUESTS [FUZZ_REQUESTS ...]]
+                    [--restart module_name [args ...]]
+                    [--restart-sleep RESTART_SLEEP_TIME]
+                    [--monitors {IPPMon} [{IPPMon} ...]] [--path PATH]
+                    [--document_url DOCUMENT_URL]
+                    host port
+
+       █      █       
+       ████████       
+      ██████████      
+     ██  ████  ██     
+     ██  ████  ██     
+    ████      ████    
+   █ ████████████ █   
+   █  ██████████  █   Fuzzowski Network Fuzzer
+   █    █     █   █           🄯  Fuzzers, inc.
+       ██     ██       
+
+positional arguments:
+  host                  Destination Host
+  port                  Destination Port
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+Connection Options:
+  -p {tcp,udp,ssl}, --protocol {tcp,udp,ssl}
+                        Protocol (Default tcp)
+  -b BIND, --bind BIND  Bind to port
+  -st SEND_TIMEOUT, --send_timeout SEND_TIMEOUT
+                        Set send() timeout (Default 5s)
+  -rt RECV_TIMEOUT, --recv_timeout RECV_TIMEOUT
+                        Set recv() timeout (Default 5s)
+  --sleep-time SLEEP_TIME
+                        Sleep time between each test (Default 0)
+  -nc, --new-conns      Open a new connection after each packet of the same test
+  -tn, --transmit-next-node
+                        Transmit the next node in the graph of the fuzzed node
+
+RECV() Options:
+  -nr, --no-recv        Do not recv() in the socket after each send
+  -nrf, --no-recv-fuzz  Do not recv() in the socket after sending a fuzzed request
+  -cr, --check-recv     Check that data has been received in recv()
+
+Crashes Options:
+  --threshold-request CRASH_THRESHOLD_REQUEST
+                        Set the number of allowed crashes in a Request before skipping it (Default 9999)
+  --threshold-element CRASH_THRESHOLD_ELEMENT
+                        Set the number of allowed crashes in a Primitive before skipping it (Default 3)
+  --ignore-aborted      Ignore ECONNABORTED errors
+  --ignore-reset        Ignore ECONNRESET errors
+  --error-fuzz-issues   Log as error when there is any connection issue in the fuzzed node
+
+Fuzz Options:
+  -c CALLBACK, --callback CALLBACK
+                        Set a callback address to fuzz with callback generator instead of normal mutations
+  --file FILENAME       Use contents of a file for fuzz mutations
+
+Fuzzers:
+  -f {cops,dhcp,ipp,lpd,netconf,telnet_cli,tftp,raw}, --fuzz {cops,dhcp,ipp,lpd,netconf,telnet_cli,tftp,raw}
+                        Available Protocols
+  -r FUZZ_REQUESTS [FUZZ_REQUESTS ...], --requests FUZZ_REQUESTS [FUZZ_REQUESTS ...]
+                        Requests of the protocol to fuzz, default All
+                          dhcp: [opt82]
+                          ipp: [http_headers, get_printer_attribs, print_uri_message, send_uri, get_jobs, get_job_attribs]
+                          lpd: [long_queue, short_queue, ctrl_file, data_file, remove_job]
+                          telnet_cli: [commands]
+                          tftp: [read]
+                          raw: ['\x01string\n' '\x02request2\x00' ...]
+
+Restart options:
+  --restart module_name [args ...]
+                        Restarter Modules:
+                          run: '<executable> [<argument> ...]' (Pass command and arguments within quotes, as only one argument)
+                          smartplug: It will turn off and on the Smart Plug
+                          teckin: <PLUG_IP>
+  --restart-sleep RESTART_SLEEP_TIME
+                        Set sleep seconds after a crash before continue (Default 5)
+
+Monitor options:
+  --monitors {IPPMon} [{IPPMon} ...], -m {IPPMon} [{IPPMon} ...]
+                        Monitor Modules:
+                          IPPMon: Sends a get-attributes IPP message to the target
+
+Other Options:
+  --path PATH           Set path when fuzzing HTTP based protocols (Default /)
+  --document_url DOCUMENT_URL
+                        Set Document URL for print_uri
+
+```
+
+#### Examples
+Fuzz the get_printer_attribs IPP operation with default options:
+
+```python -m fuzzowski printer1 631 -f ipp -r get_printer_attribs --restart smartplug```
+
+[![asciicast](https://asciinema.org/a/0RMDMrJWiFo4RoRwAjx61BXDY.svg)](https://asciinema.org/a/0RMDMrJWiFo4RoRwAjx61BXDY)
+
+Use the raw feature of IPP to fuzz the finger protocol:
+
+```python -m fuzzowski printer 79 -f raw -r '{{root}}\n'```
+
+[![asciicast](https://asciinema.org/a/Pch0JbkNK97dgrCUMK8iIfJv5.svg)](https://asciinema.org/a/Pch0JbkNK97dgrCUMK8iIfJv5)
+
+Use the raw feature of IPP to fuzz the finger protocol, but instead of using the predefined mutations, use a file:
+
+```python -m fuzzowski printer 79 -f raw -r '{{root}}\n' --file 'path/to/my/fuzzlist'```
+
+
+#### Next Steps
+* Recode the whole session and primitive modules (in progress)
+* Add support to L2 protocols (boofuzz has connection modules, but I have not tested them in python3)
+* Add ThreadedMonitors to the session
+* Implement more generic monitors (process, ICMP, ...)
+* Implement more generic restarters (?)
+* Possibility for random mutations (infinite number of tests)
+* Raw packet parsing from a PCAP or hex for quick fuzzing??
+* More protocols!
+* ???
