@@ -120,7 +120,7 @@ class SocketConnection(ITargetConnection):
         elif self.proto == "udp":
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             if self.bind:
-                self._sock.bind(self.bind)
+                self._sock.bind(('0.0.0.0', self.bind))
             if self._udp_broadcast:
                 self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
         elif self.proto == "raw-l2":
@@ -172,12 +172,13 @@ class SocketConnection(ITargetConnection):
             if self.proto in ['tcp', 'ssl']:
                 data = self._sock.recv(max_bytes)
             elif self.proto == 'udp':
-                if self.bind:
-                    data, _ = self._sock.recvfrom(max_bytes)
-                else:
-                    raise exception.FuzzowskiRuntimeError(
-                        "SocketConnection.recv() for UDP requires a bind address/port."
-                        " Current value: {}".format(self.bind))
+                # Not necessary to bind to a port to use this, right?
+                # if self.bind:
+                data, _ = self._sock.recvfrom(max_bytes)
+                # else:
+                #     raise exception.FuzzowskiRuntimeError(
+                #         "SocketConnection.recv() for UDP requires a bind address/port."
+                #         " Current value: {}".format(self.bind))
             elif self.proto in ['raw-l2', 'raw-l3']:
                 # receive on raw is not supported. Since there is no specific protocol for raw, we would just have to
                 # dump everything off the interface anyway, which is probably not what the user wants.
