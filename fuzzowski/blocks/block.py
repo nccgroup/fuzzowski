@@ -277,7 +277,7 @@ class Block(IFuzzable):
         if self.encoder is not None:
             return len(self.render())
         else:
-            return sum(len(item) for item in self.stack)
+            return sum(len(item.render()) for item in self.stack)
 
     def __nonzero__(self):
         """
