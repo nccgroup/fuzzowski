@@ -106,7 +106,7 @@ class BACnet(IFuzzer):
         # ---------------- DeviceCommunicationControl ------------------- #
         # Used in CVE-2019-12480
         # Start DeviceCommunicationControl bacnet request packet
-        s_initialize("DeviceCommunicationControl_packet1")
+        s_initialize("DeviceCommunicationControl")
         with s_block("bacnet_virtual_link_control"):
             s_byte(0x81, name='type_bvlc', fuzzable=False)
             s_byte(0x0a, name='function_bvlc', fuzzable=False)
@@ -131,36 +131,6 @@ class BACnet(IFuzzer):
             s_byte(0x00, name='string_char_set', fuzzable=True)
             s_string('A', name='passwd', fuzzable=True)
         # end bacnet DeviceCommunicationControl
-
-        # Used in CVE-2019-12480
-        # Fault detected in the 141 round sending DeviceCommunicationControl service
-        # Start DeviceCommunicationControl bacnet request packet
-        s_initialize("DeviceCommunicationControl_packet2")
-        with s_block("bacnet_virtual_link_control"):
-            s_byte(0x81, name='type', fuzzable=False)
-            s_byte(0x0a, name='function', fuzzable=False)
-            s_word(0x0016, name='bvlc-length', endian='>', fuzzable=True)
-        with s_block("bacnet_npdu"):
-            s_byte(0x01, name='version', fuzzable=False)
-            s_byte(0x04, name='control', fuzzable=False)
-        with s_block("bacnet_apdu"):
-            s_byte(0x00, name='apdu_type', fuzzable=True)
-            s_byte(0x05, name='max_response_segments', fuzzable=True)
-            s_byte(0x01, name='invoke_id', fuzzable=True)
-            s_byte(0x11, name='service_choice', fuzzable=True)
-            s_byte(0x0d, name='context_tag', fuzzable=True)
-            s_byte(0xff, name='tag_class', fuzzable=True)
-            s_byte(0x80, name='tag_number', fuzzable=True)
-            s_byte(0x00, name='lenght_value_type_byte_1', fuzzable=True)
-            s_byte(0x03, name='lenght_value_type_byte_2', fuzzable=True)
-            s_byte(0x1a, name='lenght_value_type_byte_3', fuzzable=True)
-            s_byte(0x0a, name='lenght_value_type_byte_4', fuzzable=True)
-            s_byte(0x19, name='enable-disable_byte_1', fuzzable=True)
-            s_byte(0x00, name='enable-disable_byte_2', fuzzable=True)
-            s_byte(0x2a, name='object_identifier_context_tag', fuzzable=True)
-            s_byte(0x00, name='string_char_set', fuzzable=True)
-            s_string('A', name='passwd', fuzzable=True)
-        # Start DeviceCommunicationControl bacnet request packet
         # ---------------- DeviceCommunicationControl ------------------- #
         
         # ------------------------- Who-Is ------------------------------ #
@@ -199,7 +169,6 @@ class BACnet(IFuzzer):
 
 
         # ------------------ Who_Is_Router_To_Network ------------------- #
-
         # Start Who_Is_Router_To_Network bacnet request packet 
         s_initialize("Who_Is_Router_To_Network")
         with s_block("bacnet_virtual_link_control"):
@@ -293,7 +262,6 @@ class BACnet(IFuzzer):
             s_dword(0x00220584, name='text', endian='>', fuzzable=True)
             s_byte(0x0f, name='named_tag_2', fuzzable=True)
         # end
-
         # ------------------------- atomicReadFile ----------------------- #
 
         # ------------------------- atomicWriteFile ---------------------- #
@@ -321,7 +289,6 @@ class BACnet(IFuzzer):
             s_dword(0x0a62640a, name='text', endian='>', fuzzable=True)
             s_byte(0x0f, name='named_tag_2', fuzzable=True)
         # end
-
         # ------------------------- atomicWriteFile ---------------------- #
 
     # --------------------------------------------------------------- #
@@ -356,5 +323,4 @@ class BACnet(IFuzzer):
         
     @staticmethod
     def DeviceCommunicationControl(session: Session) -> None:
-        session.connect(s_get('DeviceCommunicationControl_packet1'))
-        session.connect(s_get('DeviceCommunicationControl_packet2'))
+        session.connect(s_get('DeviceCommunicationControl'))
