@@ -1,5 +1,5 @@
 import abc
-from ..sessions import Session
+from fuzzowski import Session
 
 
 class IMonitor(metaclass=abc.ABCMeta):
@@ -27,4 +27,3 @@ class IMonitor(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def run(self):
         pass
-

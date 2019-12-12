@@ -138,7 +138,9 @@ class SocketConnection(ITargetConnection):
             try:
                 self._sock.settimeout(self._recv_timeout)
                 self._sock.connect((self.host, self.port))
-            except socket.error as e:
+            except (socket.timeout, TimeoutError) as e:
+                raise exception.FuzzowskiTargetConnectionFailedError('ETIMEDOUT')
+            except OSError as e:  # socket.error
                 if e.errno == errno.ECONNREFUSED:
                     # raise exception.FuzzowskiTargetConnectionFailedError(e.message)
                     raise exception.FuzzowskiTargetConnectionFailedError('ECONNREFUSED')
@@ -146,10 +148,8 @@ class SocketConnection(ITargetConnection):
                     raise exception.FuzzowskiTargetConnectionFailedError('EALREADY')
                 elif e.errno == errno.EINPROGRESS:
                     raise exception.FuzzowskiTargetConnectionFailedError('EINPROGRESS')
-                else:
-                    raise
-            except OSError as e:
-                raise exception.FuzzowskiTargetConnectionFailedError(errno.errorcode(e.errno))
+                else:  # ??
+                    raise exception.FuzzowskiTargetConnectionFailedError(errno.errorcode.get(e.errno))
 
         # if SSL is requested, then enable it.
         if self.proto == "ssl":

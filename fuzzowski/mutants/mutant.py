@@ -1,12 +1,15 @@
 from ..exception import FuzzowskiRuntimeError
 from .imutant import IMutant
-from typing import Generator
+from typing import Generator, Union
+import re
 
 
 class Mutant(IMutant):
     """
     Generic Mutant Class, Primitives and blocks should inherit from this and
     """
+
+    name_re = re.compile('^[A-Za-z0-9_]+$')
 
     def __init__(self, value: bytes, name: str = None, fuzzable: bool = True, mutations: list = None):
         """
@@ -23,11 +26,11 @@ class Mutant(IMutant):
         if mutations is None:
             mutations = []
         self._fuzzable = fuzzable  # flag controlling whether or not the given mutant is to be fuzzed.
-        self._name = name
+        self.name = name
         self._mutations = mutations  # library of static fuzz heuristics to cycle through.
         self._rendered = ""  # rendered value of primitive.
 
-        self._original_value = self._render(value)  # original value of primitive.
+        self._original_value = value  # original value of primitive.
 
         # These 3 values are set by reset() to these values
         if self._fuzzable:
@@ -38,6 +41,7 @@ class Mutant(IMutant):
         self._mutant_index = 0  # current mutation index into the fuzz library.
 
         self._disabled = False  # If the node is _disabled, its mutations should not be used
+        self._mutation_gen = self.mutation_generator()
 
     def __iter__(self):
         self.reset()
@@ -61,6 +65,14 @@ class Mutant(IMutant):
     def name(self) -> str:
         return self._name
 
+    @name.setter
+    def name(self, value: str):
+        if value is not None and self.name_re.match(value):
+            self._name = value
+        else:
+            raise FuzzowskiRuntimeError(f'Invalid name: "{value}". '
+                                        f'Name must follow the following pattern: {self.name_re.pattern}')
+
     @property
     def fuzzable(self) -> bool:
         return self._fuzzable
@@ -83,7 +95,7 @@ class Mutant(IMutant):
 
     @property
     def original_value(self) -> bytes:
-        return self._original_value
+        return self._render(self._original_value)
 
     def reset(self):
         """
@@ -127,14 +139,15 @@ class Mutant(IMutant):
         return self._mutation_generator()
 
     def _mutation_generator(self):
-        if self.mutant_index != 0:
-            yield self.render()  # We want to render the first value of the generator when we go with goto
+        # if self.mutant_index != 0:
+        #     yield self.render()  # We want to render the first value of the generator when we go with goto
         while self._mutate():
             yield self.render()
 
     def goto(self, mutant_index: int):
         if mutant_index > self.num_mutations:
-            raise FuzzowskiRuntimeError("Mutant tried to get mutation > num_mutations")
+            raise FuzzowskiRuntimeError(f"Mutant tried to get mutation "
+                                        f"{mutant_index} > num_mutations ({self.num_mutations})")
         elif mutant_index == 0:
             self.reset()
         else:
@@ -154,7 +167,7 @@ class Mutant(IMutant):
 
         return self._rendered
 
-    def _render(self, value) -> bytes:
+    def _render(self, value: Union[bytes, str]) -> bytes:
         """
         Render an arbitrary value.
 

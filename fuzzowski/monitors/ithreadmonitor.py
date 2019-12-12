@@ -1,8 +1,7 @@
-import abc
 from abc import ABCMeta
 from threading import Thread
 from .imonitor import IMonitor
-from ..sessions import Session
+from fuzzowski import Session
 
 
 class IThreadMonitor(Thread, IMonitor, metaclass=ABCMeta):
@@ -17,5 +16,3 @@ class IThreadMonitor(Thread, IMonitor, metaclass=ABCMeta):
         IMonitor.__init__(self, session, *args, **kwargs)
         self.session = session
         self._stop = False
-
-

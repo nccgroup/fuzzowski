@@ -1,5 +1,10 @@
 import pytest
-from fuzzowski import BitField, Byte, Word, DWord, QWord, LITTLE_ENDIAN, BIG_ENDIAN
+from fuzzowski.mutants.primitives.bit_field import BitField
+from fuzzowski.mutants.primitives.byte import Byte
+from fuzzowski.mutants.primitives.word import Word
+from fuzzowski.mutants.primitives.dword import DWord
+from fuzzowski.mutants.primitives.qword import QWord
+from fuzzowski.constants import LITTLE_ENDIAN, BIG_ENDIAN
 
 
 @pytest.mark.parametrize("value, width, endian, rendered", [
@@ -11,6 +16,63 @@ from fuzzowski import BitField, Byte, Word, DWord, QWord, LITTLE_ENDIAN, BIG_END
 ])
 def test_bit_fields(value, width, endian, rendered):
     assert BitField(value, width=width, endian=endian).render() == rendered
+
+
+def test_string_init():
+    b = BitField(30, width=8, endian=LITTLE_ENDIAN)
+    assert next(b) == b.render()
+
+
+@pytest.fixture
+def test_bit_field_little():
+    return BitField(30, width=16, endian=LITTLE_ENDIAN, output_format='binary')
+
+
+@pytest.fixture
+def test_bit_field_big():
+    return BitField(30, width=16, endian=BIG_ENDIAN, output_format='binary')
+
+
+def test_bit_fields_big_endian(test_bit_field_big):
+    assert test_bit_field_big.render() == test_bit_field_big.original_value
+
+    assert test_bit_field_big.num_mutations == len([x for x in test_bit_field_big]) \
+                                            == len([x for x in test_bit_field_big.mutation_generator(0)])
+
+    gen = test_bit_field_big.mutation_generator(0)
+    assert next(gen) == b'\x00\x00'
+    assert next(gen) == b'\x00\x01'
+
+
+def test_bit_fields_little_endian(test_bit_field_little):
+    assert test_bit_field_little.render() == test_bit_field_little.original_value
+
+    gen = test_bit_field_little.mutation_generator(0)
+    assert next(gen) == b'\x00\x00'
+    assert next(gen) == b'\x01\x00'
+
+
+def test_bit_fields_reset():
+    b = BitField(30, width=16, endian=BIG_ENDIAN, output_format='binary', mutations=[0, 1, 255, 0xffff])
+    gen = b.mutation_generator(0)
+    assert b.render() == b'\x00\x1e' == b.original_value
+
+    actual_value = next(gen)
+    assert b.render() == b'\x00\x00' == actual_value
+
+    actual_value = next(gen)
+    assert b.render() == b'\x00\x01' == actual_value
+
+    gen = b.mutation_generator()  # Another generator, but without index, it will be reset
+    actual_value = next(gen)
+    assert b.render() == b'\x00\x00' == actual_value
+
+    assert [x for x in b] == [b'\x00\x00', b'\x00\x01', b'\x00\xff', b'\xff\xff']
+
+
+def test_bit_field_ascii():
+    b = BitField(30, width=16, endian=BIG_ENDIAN, output_format='ascii', mutations=[0, 1, 255, 0xffff])
+    assert [x for x in b] == [b'0', b'1', b'255', b'65535']
 
 
 @pytest.mark.parametrize("value, rendered", [

@@ -3,8 +3,7 @@ from prompt_toolkit import print_formatted_text
 from pygments.lexers.python import PythonLexer
 from prompt_toolkit.formatted_text import PygmentsTokens
 
-from fuzzowski.blocks.ifuzzable import IFuzzable
-from ..blocks.request import Request
+from fuzzowski.mutants import Request, Mutant
 from fuzzowski.connections.target import Target
 from fuzzowski.connections.socket_connection import SocketConnection
 
@@ -37,7 +36,7 @@ def repr_input_bytes_as_python(input_bytes, orig, first=False, last=False):
 # --------------------------------------------------------------- #
 
 
-def block_to_python(block: IFuzzable, indent=0, mutant=None, first=False) -> str:
+def block_to_python(block: Mutant, indent=0, mutant=None, first=False) -> str:
     block_code = ''
     space = ' ' * indent
     if mutant is None and hasattr(block, 'mutant'):
@@ -76,10 +75,10 @@ def request_to_python(block: Request, indent=0) -> str:
 # --------------------------------------------------------------- #
 
 
-def path_to_python(path: list, nodes: dict, indent=4) -> str:
+def path_to_python(path: list, indent=4) -> str:
     block_code = ''
     for e in path:
-        block = nodes[e.dst]
+        block = e.dst
         block_code += request_to_python(block, indent)
         block_code += '\n'
 
@@ -88,9 +87,9 @@ def path_to_python(path: list, nodes: dict, indent=4) -> str:
 # --------------------------------------------------------------- #
 
 
-def print_python(path: list, nodes: dict) -> None:
+def print_python(path: list) -> None:
     tokens = []
-    block_code = path_to_python(path, nodes)
+    block_code = path_to_python(path)
 
     tokens.extend(list(pygments.lex(block_code, lexer=PythonLexer())))
 
@@ -99,11 +98,11 @@ def print_python(path: list, nodes: dict) -> None:
 # --------------------------------------------------------------- #
 
 
-def get_exploit_code(target: Target, path: list, nodes: dict,
+def get_exploit_code(target: Target, path: list,
                   receive_data_after_each_request, receive_data_after_fuzz) -> str:
     blocks_code = ''
     for e in path:
-        block = nodes[e.dst]
+        block = e.dst
         blocks_code += request_to_python(block, indent=4)
         blocks_code += get_send_python(target._target_connection, block.name)
         if receive_data_after_each_request and e != path[-1]:
@@ -128,11 +127,11 @@ def get_exploit_code(target: Target, path: list, nodes: dict,
 # --------------------------------------------------------------- #
 
 
-def print_poc(target: Target, path: list, nodes: dict,
+def print_poc(target: Target, path: list,
               receive_data_after_each_request, receive_data_after_fuzz) -> None:
     tokens = []
 
-    exploit_code = get_exploit_code(target, path, nodes, receive_data_after_each_request, receive_data_after_fuzz)
+    exploit_code = get_exploit_code(target, path, receive_data_after_each_request, receive_data_after_fuzz)
     tokens.extend(list(pygments.lex(exploit_code, lexer=PythonLexer())))
 
     print_formatted_text(PygmentsTokens(tokens))

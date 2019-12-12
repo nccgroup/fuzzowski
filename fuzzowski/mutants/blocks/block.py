@@ -1,4 +1,4 @@
-from fuzzowski import FuzzowskiRuntimeError
+from fuzzowski.exception import FuzzowskiRuntimeError
 from ..mutant import Mutant
 from typing import List, Generator
 
@@ -37,7 +37,7 @@ class Block(Mutant):
         self._mutant_index = 0  # current mutation index.
         self._disabled = False  # Blocks cannot be disabled
 
-        self._mutation_gen = None
+        self._mutation_gen = self._mutation_generator()
 
     @property
     def original_value(self):
@@ -54,24 +54,28 @@ class Block(Mutant):
         return self._mutation_gen
 
     def _mutation_generator(self):
-        if self.mutant_index != 0:
-            yield self.render()  # We want to render the first value of the generator when we go with goto
+        # if self.mutant_index != 0:
+        #     yield self.render()  # We want to render the first value of the generator when we go with goto
 
         # Iterate over all fuzzable mutants, choosing one to be the actual mutant each time
         for item in self.stack:  # First pass - Take any mutable item
             if item.fuzzable and item.num_mutations > 0:
-                # TODO: Update request with actual mutant
-                # if not isinstance(item, Block):
-                #     self.request.mutant = item
+                # Update request with actual mutant
+                if not isinstance(item, Block) and self.request is not None:
+                    self.request.mutant = item
                 self.actual_mutant = item
                 self.mutant_generator = item.mutation_generator()
 
                 # For each mutation, render everything and yield it
-                #while next(self.mutant_generator):
                 for mutation in self.mutant_generator:
+                    self._mutant_index += 1
                     yield self.render()
 
         # TODO: If a group is attached, repeat the process above for each mutation of the group
+
+        # After finishing, update Request removing the mutant
+        self.request.mutant = None
+        self.reset()
 
     def render(self, replace_node: str = None, replace_value: bytes = None, original: bool = False) -> bytes:
         """
@@ -170,9 +174,14 @@ class Block(Mutant):
         """
         Reset the primitives on this blocks stack to the starting mutation state.
         """
+        self.goto(0)
 
+    def _reset(self):
         self._fuzz_complete = False
         self.group_idx = 0
+        # Update Request removing the mutant
+        self.request.mutant = None
+        self._mutant_index = 0
 
         for item in self.stack:
             if item.fuzzable:
@@ -180,14 +189,15 @@ class Block(Mutant):
 
     def goto(self, mutant_index: int):
         if mutant_index > self.num_mutations:
-            raise FuzzowskiRuntimeError("Mutant tried to get mutation > num_mutations")
+            raise FuzzowskiRuntimeError(f"Mutant tried to get mutation "
+                                        f"{mutant_index} > num_mutations ({self.num_mutations})")
         elif mutant_index == 0:
-            self.reset()
+            self._reset()
             self._mutation_gen = self._mutation_generator()
         else:
             # Iterate through mutations until reaching the desired mutant_index
             self.reset()
-            i = 1
+            i = 0
             self._mutation_gen = self._mutation_generator()
             while i < mutant_index:
                 next(self._mutation_gen)  # The mutation_generator will change everything
@@ -200,7 +210,7 @@ class Block(Mutant):
         if self.encoder is not None:
             return len(self.render())
         else:
-            return sum(len(item) for item in self.stack)
+            return sum(len(item.render()) for item in self.stack)
 
     """
     def _mutate(self):

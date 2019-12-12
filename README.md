@@ -9,7 +9,7 @@
    █ ████████████ █   
    █  ██████████  █   Fuzzowski Network Fuzzer
    █    █     █   █           🄯  Fuzzers, inc.
-       ██     ██       
+       ██     ██                by Mario Rivas
 ```
 
 The idea is to be the Network Protocol Fuzzer that we will __want__ to use.
@@ -35,6 +35,7 @@ and much more
 
 #### Protocols implemented
 * **LPD (Line Printing Daemon)**: Fully implemented
+* **IPP (Internet Printing Protocol)**: Partially implemented
 
 #### Installation
 ```
@@ -162,7 +163,7 @@ Use the raw feature of IPP to fuzz the finger protocol, but instead of using the
 
 
 #### Next Steps
-* Recode the whole session and primitive modules (in progress)
+* ~~Recode the whole session and primitive modules~~ Finally recoded!
 * Add support to L2 protocols (boofuzz has connection modules, but I have not tested them in python3)
 * Add ThreadedMonitors to the session
 * Implement more generic monitors (process, ICMP, ...)

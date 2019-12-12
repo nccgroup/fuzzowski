@@ -349,10 +349,7 @@ class String(Mutant):
 
         # Finally, obtain an iterable of all the mutation lists selected
         self._mutations = self.get_all_mutations()  # Contains all mutations
-
-    @property
-    def name(self):
-        return self._name
+        self._mutation_gen = self.mutation_generator()
 
     def set_filename(self, filename: str, replace: bool = False):
         """

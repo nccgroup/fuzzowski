@@ -18,8 +18,11 @@ import hashlib
 
 from fuzzowski import *
 from fuzzowski.fuzzers import IFuzzer
+from fuzzowski.mutants import REQUESTS
 from fuzzowski.restarters import IRestarter
 from fuzzowski.monitors import IMonitor, IThreadMonitor
+
+from fuzzowski.session import Session
 
 logo = """                                       
        ■      ■       
@@ -31,7 +34,7 @@ logo = """
    ■ ■■■■■■■■■■■■ ■   
    ■  ■■■■■■■■■■  ■   Fuzzowski Network Fuzzer
    ■    ■     ■   ■           🄯  Fuzzers, inc.
-       ■■     ■■       """
+       ■■     ■■               by Mario Rivas"""
 
 
 class Fuzzowski(object):
@@ -75,12 +78,12 @@ class Fuzzowski(object):
                                receive_data_after_fuzz=self.args.receive_data_after_fuzz,
                                ignore_connection_reset=self.args.ignore_connection_reset,
                                ignore_connection_aborted=self.args.ignore_connection_aborted,
-                               ignore_connection_issues_when_sending_fuzz_data=self.args.ignore_connection_issues_when_sending_fuzz_data,
+                               ignore_connection_issues_after_fuzz=self.args.ignore_connection_issues_after_fuzz,
                                target=self.target,
                                restarter=self.restart_module,
                                monitors=self.monitors,
-                               new_connection_between_packets=self.args.new_connection_between_packets,
-                               transmit_next_node=self.args.transmit_next_node
+                               new_connection_between_requests=self.args.new_connection_between_requests,
+                               transmit_full_path=self.args.transmit_full_path
                                )
 
         # Connect nodes of graph
@@ -125,10 +128,10 @@ class Fuzzowski(object):
                               help="Set recv() timeout (Default 5s)")
         conn_grp.add_argument("--sleep-time", dest="sleep_time", type=float, default=0.0,
                               help="Sleep time between each test (Default 0)")
-        conn_grp.add_argument('-nc', '--new-conns', dest='new_connection_between_packets',
+        conn_grp.add_argument('-nc', '--new-conns', dest='new_connection_between_requests',
                               help="Open a new connection after each packet of the same test",
                               action='store_true')
-        conn_grp.add_argument('-tn', '--transmit-next-node', dest='transmit_next_node',
+        conn_grp.add_argument('-tn', '--transmit_full_path', dest='transmit_full_path',
                               help="Transmit the next node in the graph of the fuzzed node",
                               action='store_true')
         recv_grp = self.parser.add_argument_group('RECV() Options')
@@ -153,7 +156,7 @@ class Fuzzowski(object):
         crash_grp.add_argument('--ignore-reset', dest='ignore_connection_reset',
                                help="Ignore ECONNRESET errors",
                                action='store_false')
-        crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_when_sending_fuzz_data',
+        crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_after_fuzz',
                                help="Log as error when there is any connection issue in the fuzzed node",
                                action='store_true')
 
@@ -347,7 +350,7 @@ class Fuzzowski(object):
 
     def run(self):
         """Start the session fuzzer!"""
-        self.session.fuzz()
+        self.session.start()
 
 
 # --------------------------------------------------------------- #
