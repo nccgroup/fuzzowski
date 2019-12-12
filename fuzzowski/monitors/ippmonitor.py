@@ -1,8 +1,6 @@
-# from .ithreadmonitor import IThreadMonitor
 from .imonitor import IMonitor
-from ..sessions import Session
+from fuzzowski import Session
 from ..connections import ITargetConnection
-from time import sleep
 from copy import deepcopy
 
 
@@ -18,35 +16,35 @@ class IPPMon(IMonitor):
                                    )
 
     get_printer_attribs_body = (b"\x01\x01"  # version-number
-                                   b"\x00\x0b"  # operation-id - Get-Printer-Attributes
-                                   b"\x00\x01\xab\x10"  # request-id
-                                   b"\x01"  # begin-attribute-group-tag
+                                b"\x00\x0b"  # operation-id - Get-Printer-Attributes
+                                b"\x00\x01\xab\x10"  # request-id
+                                b"\x01"  # begin-attribute-group-tag
 
-                                   b"\x47"  # value-tag - charset
-                                   b"\x00\x12"  # name-length
-                                   b"attributes-charset"  # name
-                                   b"\x00\x05"  # value-length
-                                   b"utf-8"  # value
+                                b"\x47"  # value-tag - charset
+                                b"\x00\x12"  # name-length
+                                b"attributes-charset"  # name
+                                b"\x00\x05"  # value-length
+                                b"utf-8"  # value
 
-                                   b"\x48"  # value-tag - natural language
-                                   b"\x00\x1b"
-                                   b"attributes-natural-language"
-                                   b"\x00\x02"
-                                   b"en"
+                                b"\x48"  # value-tag - natural language
+                                b"\x00\x1b"
+                                b"attributes-natural-language"
+                                b"\x00\x02"
+                                b"en"
 
-                                   b"\x45"  # value-tag - uri
-                                   b"\x00\x0b"
-                                   b"printer-uri"
-                                   b"\x00\x14"
-                                   b"ipp://localhost/ipp/"
+                                b"\x45"  # value-tag - uri
+                                b"\x00\x0b"
+                                b"printer-uri"
+                                b"\x00\x14"
+                                b"ipp://localhost/ipp/"
 
-                                   b"\x44"  # value-tag - keyword
-                                   b"\x00\x14"
-                                   b"requested-attributes"
-                                   b"\x00\x13"
-                                   b"printer-description"
-                                   b"\x03"  # end-of-attributes-tag
-                                   )
+                                b"\x44"  # value-tag - keyword
+                                b"\x00\x14"
+                                b"requested-attributes"
+                                b"\x00\x13"
+                                b"printer-description"
+                                b"\x03"  # end-of-attributes-tag
+                                )
 
     def __init__(self, session: Session, path: str = '/'):
         super().__init__(session)
@@ -61,8 +59,8 @@ class IPPMon(IMonitor):
         return "Sends a get-attributes IPP message to the target"
 
     def run(self):
-        self.session._fuzz_data_logger.open_test_step(f"Calling Monitor {self.name()}")
-        conn = deepcopy(self.session.targets[0]._target_connection)
+        self.session.logger.open_test_step(f"Calling Monitor {self.name()}")
+        conn = deepcopy(self.session.target._target_connection)
         result = self._get_ipp_attribs(conn)
         return result
 
@@ -72,14 +70,11 @@ class IPPMon(IMonitor):
         conn.send(headers + self.get_printer_attribs_body)
         recv = conn.recv_all(10000)
         if len(recv) == 0:
-            self.session._fuzz_data_logger.log_error("Get Printer Attributes Failed!!")
-            #print("RECEIVED 0")
+            self.session.logger.log_error("Get Printer Attributes Failed!!")
             result = False
         else:
-            self.session._fuzz_data_logger.log_info(f"Get Printer Attributes succeeded")
-            #print(f"RECEIVED {len(recv)}")
+            self.session.logger.log_info(f"Get Printer Attributes succeeded")
             result = True
 
         conn.close()
         return result
-

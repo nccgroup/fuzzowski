@@ -255,7 +255,7 @@ def _collate_bytes(msb, lsb):
     return (ord(msb) << 8) + ord(lsb)
 
 
-def ipv4_checksum(msg):
+def ipv4_checksum(msg: bytes):
     """
     Return IPv4 checksum of msg.
     :param msg: Message to compute checksum over.
@@ -273,7 +273,7 @@ def ipv4_checksum(msg):
     return ~total & 0xffff
 
 
-def _udp_checksum_pseudo_header(src_addr, dst_addr, msg_len):
+def _udp_checksum_pseudo_header(src_addr: bytes, dst_addr: bytes, msg_len: int):
     """Return pseudo-header for UDP checksum.
 
     :type src_addr: bytes
@@ -291,11 +291,11 @@ def _udp_checksum_pseudo_header(src_addr, dst_addr, msg_len):
     return (src_addr +
             dst_addr +
             b"\x00" +
-            chr(ip_constants.IPV4_PROTOCOL_UDP) +
+            bytes([ip_constants.IPV4_PROTOCOL_UDP]) +
             struct.pack(">H", msg_len))
 
 
-def udp_checksum(msg, src_addr, dst_addr):
+def udp_checksum(msg: bytes, src_addr: bytes, dst_addr: bytes):
     """Return UDP checksum of msg.
 
     Recall that the UDP checksum involves creating a sort of pseudo IP header.

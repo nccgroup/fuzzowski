@@ -1,7 +1,6 @@
-from typing import List
 from .ifuzzer import IFuzzer
-from .. import *
-from ..sessions import Session
+from fuzzowski.mutants.spike import *
+from fuzzowski import Session
 
 CTRL_FILE_OPTIONS = [
     "C",  # 7.1 C - Class for Banner Page - Name of class for banner pages
@@ -58,81 +57,81 @@ class LPD(IFuzzer):
 
         # Long Queue
         s_initialize('long_queue')
-        s_static('\x04', name='command')
+        s_static(b'\x04', name='command')
         s_string('lp', name='queue_name')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('root', name='username')
-        s_delim('\n')
+        s_delim(b'\n')
 
         # --------------------------------------------------------------- #
 
         # Short Queue
         s_initialize('short_queue')
-        s_static('\x03', name='command')
+        s_static(b'\x03', name='command')
         s_string('lp', name='queue_name')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('root', name='username')
-        s_delim('\n')
+        s_delim(b'\n')
 
         # --------------------------------------------------------------- #
 
         s_initialize('recv_job')
-        s_static('\x02', name='command')
+        s_static(b'\x02', name='command')
         s_string('lp', name='queue_name')
-        s_delim('\n')
+        s_delim(b'\n')
 
         # --------------------------------------------------------------- #
 
         # Ctrl File
         s_initialize('ctrl_file')
-        s_static('\x02', name='subcommand')
+        s_static(b'\x02', name='subcommand')
         s_size('ctrlfiledata', output_format='ascii', name='ctrl_file_size')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('cfA337hostname', name='ctrl_file_name')
-        s_delim('\n')
+        s_delim(b'\n')
         with s_block('ctrlfiledata'):
-            s_group('opts', values=CTRL_FILE_OPTIONS)
-            s_string('root', mutations=['long'], name='ctrlfile_opt_val')
-            s_delim('\n', name='ctrlfile_option_delim')
+            s_group(b'opts', values=CTRL_FILE_OPTIONS)
+            s_string('root', mutation_types=['long'], name='ctrlfile_opt_val', )
+            s_delim(b'\n', name='ctrlfile_option_delim')
         s_repeat("ctrlfiledata", min_reps=0, max_reps=1000, step=100)
-        s_delim('\x00', name='ctrlfile_end')
+        s_delim(b'\x00', name='ctrlfile_end')
 
         # --------------------------------------------------------------- #
 
         # Non fuzzable Ctrl file and Data file
         s_initialize('nofuzz_ctrl_file')  # CTRL file with options just to print!
-        s_static('\x02', name='subcommand')
+        s_static(b'\x02', name='subcommand')
         s_size('ctrlfiledata', output_format='ascii', name='ctrl_file_size', fuzzable=False)
-        s_delim(' ', fuzzable=False)
+        s_delim(b' ', fuzzable=False)
         s_string('cfA337hostname', name='ctrl_file_name', fuzzable=False)
-        s_delim('\n', fuzzable=False)
-        s_static('Hhostname\nProot\nMroot\nfdfB337hostname\nUdfB337hostname\nN/etc/passwd\n\x00')
+        s_delim(b'\n', fuzzable=False)
+        s_static(b'Hhostname\nProot\nMroot\nfdfB337hostname\nUdfB337hostname\nN/etc/passwd\n\x00', name='ctrlfiledata')
 
         s_initialize('data_file')
-        s_static('\x03', name='subcommand')
+        s_static(b'\x03', name='subcommand')
         s_size('data_file', output_format='ascii', name='data_file_size')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('dfB337hostname', name='data_file_name')
-        s_delim('\n')
+        s_delim(b'\n')
         s_string(' ' * 5, name='data_file')  # 5 spaces to, in case of printing, don't waste #savetheamazonforest xD
-        s_delim('\x00', name='data_file_end')
+        s_delim(b'\x00', name='data_file_end')
 
         # --------------------------------------------------------------- #
 
         s_initialize('remove_job')
-        s_static('\x05', name='command')
+        s_static(b'\x05', name='command')
         s_string('lp', name='queue_name')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('root', name='user_name')
-        s_delim(' ')
+        s_delim(b' ')
         s_string('337', name='job_number')
-        s_delim('\n')
+        s_delim(b'\n')
 
         # --------------------------------------------------------------- #
 
         # Abort
         s_initialize('abort')
-        s_static('\x01')
+        s_static(b'\x01')
 
     @staticmethod
     def long_queue(session: Session) -> None:

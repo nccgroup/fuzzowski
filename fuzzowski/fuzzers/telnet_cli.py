@@ -1,7 +1,6 @@
-from typing import List
 from .ifuzzer import IFuzzer
-from .. import *
-from ..sessions import Session
+from fuzzowski import Session
+from fuzzowski.mutants.spike import *
 
 
 class TelnetCLI(IFuzzer):
@@ -29,5 +28,3 @@ class TelnetCLI(IFuzzer):
     @staticmethod
     def commands(session: Session) -> None:
         session.connect(s_get('example_command'))
-
-

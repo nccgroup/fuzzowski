@@ -13,6 +13,14 @@ class FuzzowskiTargetConnectionFailedError(FuzzowskiError):
     pass
 
 
+class FuzzowskiPaused(FuzzowskiError):
+    pass
+
+
+class FuzzowskiTestCaseAborted(FuzzowskiError):
+    pass
+
+
 class FuzzowskiTargetConnectionReset(FuzzowskiError):
     pass
 

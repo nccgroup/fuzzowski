@@ -13,6 +13,7 @@ class CommandPrompt(object):
         self.cmd_handler = CommandHandler(self.commands)
         self.completer = CommandCompleter(self.commands)
         self.style = self.get_style()
+        self._break = False
         self.prompt_session = PromptSession(completer=self.completer, style=self.style,
                                             bottom_toolbar=self.bottom_toolbar,
                                             auto_suggest=AutoSuggestFromHistory())
@@ -57,6 +58,13 @@ class CommandPrompt(object):
 
     # --------------------------------------------------------------- #
 
+    def handle_break(self, tokens: list) -> bool:
+        if tokens[0] in ('c', 'continue'):
+            return True
+        else:
+            return False
+    # --------------------------------------------------------------- #
+
     def handle_command(self, tokens: list) -> None:
         if len(tokens) > 0:
             self.cmd_handler.handle_command(tokens)
@@ -78,10 +86,9 @@ class CommandPrompt(object):
 
                 tokens = get_tokens(cmd)
 
-                if tokens[0] in ('c', 'continue'):
-                    break
-                self.handle_exit(tokens)
-                self.handle_command(tokens)
+                if not self.handle_break(tokens):
+                    self.handle_exit(tokens)
+                    self.handle_command(tokens)
 
             except KeyboardInterrupt:
                 continue
