@@ -242,42 +242,6 @@ class Session(object):
 
     # --------------------------------------------------------------- #
 
-    def goto(self, test_case_id: int) -> TestCase or None:
-        """
-        Prepare the session, self.test_case and self._test_cases in the test_case with the test_case_id specified.
-        Args:
-            test_case_id: The test_case to go. 0 go to an state of a new session.
-
-        Returns: The test_case specified by test_case_id, or None if test_case_id is 0
-
-        """
-        if test_case_id > self.total_mutations:
-            test_case_id = self.total_mutations
-        # 1st. Reset all
-        self._reset()
-        if test_case_id == 0:
-            return None
-        for test_case in self._test_cases:
-            if test_case.id == test_case_id:
-                return test_case
-
-    # --------------------------------------------------------------- #
-
-    def next(self) -> TestCase or None:
-        """
-        Returns the next test case. Resets the state of the session if test_cases are exhausted
-
-        Returns: The next test case in self._test_cases, or None if self._test_cases is exhausted
-        """
-        try:
-            self.test_case = next(self._test_cases)
-            return self.test_case
-        except StopIteration:
-            self.reset()
-            return None  # All test cases exhausted
-
-    # --------------------------------------------------------------- #
-
     def reset(self):
         self._reset()
 
@@ -308,6 +272,77 @@ class Session(object):
             self.goto(mutant_index)
         except exception.FuzzowskiTargetConnectionFailedError as e:
             self.logger.log_fail(f"Test failed: {type(e).__name__}. {str(e)}")
+
+    # ================================================================#
+    # Movements                                                       #
+    # ================================================================#
+
+    def goto(self, test_case_id: str or int) -> TestCase or None:
+        """
+        Prepare the session, self.test_case and self._test_cases in the test_case with the test_case_id specified.
+        Args:
+            test_case_id: The test_case to go. 0 go to an state of a new session. It can also be a path!
+
+        Returns: The test_case specified by test_case_id, or None if test_case_id is 0
+        """
+        if type(test_case_id) is int:
+            return self.goto_id(test_case_id)
+        else:
+            return self.goto_path(test_case_id)
+
+    def goto_id(self, test_case_id: int) -> TestCase or None:
+        """
+        Prepare the session, self.test_case and self._test_cases in the test_case with the test_case_id specified.
+        Args:
+            test_case_id: The test_case to go. 0 go to an state of a new session.
+
+        Returns: The test_case specified by test_case_id, or None if test_case_id is 0
+        """
+        if test_case_id > self.total_mutations:
+            test_case_id = self.total_mutations
+        # 1st. Reset all
+        self._reset()
+        if test_case_id == 0:
+            return None
+        for test_case in self._test_cases:
+            if test_case.id == test_case_id:
+                return test_case
+
+    def goto_path(self, path_name) -> TestCase or None:
+        destination = Request.get_mutant_by_path(path_name)
+        if not destination.fuzzable:
+            raise exception.FuzzowskiRuntimeError(f"You can't go to {path_name}. It is not fuzzable!")
+        self._reset()
+        for test_case in self._test_cases:
+            if test_case.request == destination or test_case.request.mutant == destination:
+                return test_case
+
+    def skip(self) -> TestCase or None:
+        """Skip the current mutant, go to the next mutant"""
+        if self.test_case is None:
+            return self.next()
+        else:
+            test_case_mutant = self.test_case.request.mutant
+            while self.test_case is not None and test_case_mutant == self.test_case.request.mutant:
+                self.next()
+            return self.test_case
+
+    # --------------------------------------------------------------- #
+
+    def next(self) -> TestCase or None:
+        """
+        Returns the next test case. Resets the state of the session if test_cases are exhausted
+
+        Returns: The next test case in self._test_cases, or None if self._test_cases is exhausted
+        """
+        try:
+            self.test_case = next(self._test_cases)
+            return self.test_case
+        except StopIteration:
+            self.reset()
+            return None  # All test cases exhausted
+
+    # --------------------------------------------------------------- #
 
     # ================================================================#
     # Test case Iterators                                             #
@@ -349,7 +384,7 @@ class Session(object):
 
     # ================================================================#
     # Graph related functions                                         #
-    # ================================================================#
+    # =====================================================   ===========#
 
     def connect(self, src: Request, dst: Request = None, callback: callable = None):
         self.graph.connect(src, dst, callback)

@@ -70,6 +70,10 @@ class SessionPrompt(CommandPrompt):
                 'desc': 'Launch the restarter module to restart the target',
                 'exec': self._cmd_restart
             },
+            'skip': {
+                'desc': 'Skip the actual mutant',
+                'exec': self._cmd_skip
+            },
             'test': {
                 'desc': 'Send the actual case without fuzzing',
                 'exec': self._cmd_test_single_case
@@ -182,13 +186,18 @@ class SessionPrompt(CommandPrompt):
         :return: None
         """
         try:
-            mutant_index = int(tokens[0])
-        except (IndexError, ValueError):
-            print_formatted_text(HTML('<red>goto usage: goto TEST_ID</red>'),
-                                 style=self.get_style())
-            return
-
-        self.session.goto(mutant_index)
+            try:
+                mutant_index = int(tokens[0])
+                self.session.goto(mutant_index)
+            except IndexError:
+                self._print_error(f'<red>goto usage: goto [TEST_ID|PATH]. Example:\n'
+                                  f'\tgoto 10\n'
+                                  f'\tgoto request1.mutant1</red>')
+                return
+            except ValueError:
+                self.session.goto(tokens[0])
+        except exception.FuzzowskiRuntimeError as e:
+            self._print_error(str(e))
 
     # --------------------------------------------------------------- #
 
@@ -239,6 +248,10 @@ class SessionPrompt(CommandPrompt):
             self.session.test_case.print_poc()
         self.session.load_session_state(session_state)
 
+    # --------------------------------------------------------------- #
+
+    def _cmd_skip(self, _):
+        self.session.skip()
     # --------------------------------------------------------------- #
 
     def _cmd_suspects(self, tokens):

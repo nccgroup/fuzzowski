@@ -108,6 +108,16 @@ def test_session_movements():
     assert test_case.request.mutant.name == 'mutant22'
     assert r1.mutant_index == 0
 
+    test_case = session.goto("request1.mutant12")
+    assert test_case.id == 4
+    test_case = session.goto(r2.name)
+    assert test_case.request == r2
+    assert test_case.id == 7
+    assert test_case.request.mutant.name == 'mutant21'
+    session.skip()
+    assert test_case.request.mutant.name == 'mutant22'
+
+
     session.disable_by_path_name("request1.mutant11")
     assert "request1.mutant11" in session.disabled_elements
     session.disable_by_path_name("request1.mutant11", disable=False)  # Enable
