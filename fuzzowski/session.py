@@ -309,6 +309,13 @@ class Session(object):
                 return test_case
 
     def goto_path(self, path_name) -> TestCase or None:
+        """
+        Prepare the session, self.test_case and self._test_cases in the test_case with the path_name identified.
+        Args:
+            path_name: The test_case to go. It must be "request_name" or "request_name.mutant_name"
+
+        Returns: The first test_case specified by path_name
+        """
         destination = Request.get_mutant_by_path(path_name)
         if not destination.fuzzable:
             raise exception.FuzzowskiRuntimeError(f"You can't go to {path_name}. It is not fuzzable!")
@@ -316,6 +323,8 @@ class Session(object):
         for test_case in self._test_cases:
             if test_case.request == destination or test_case.request.mutant == destination:
                 return test_case
+
+    # --------------------------------------------------------------- #
 
     def skip(self) -> TestCase or None:
         """Skip the current mutant, go to the next mutant"""

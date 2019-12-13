@@ -1,5 +1,5 @@
 from .imonitor import IMonitor
-from ..sessions import Session
+from fuzzowski import Session
 from ..connections import ITargetConnection
 from time import sleep
 from copy import deepcopy
@@ -39,8 +39,8 @@ class BACnetMonitor(IMonitor):
         return "Discovers and enumerates BACnet devices and collects device information based off standard requests"
 
     def run(self):
-        self.session._fuzz_data_logger.open_test_step(f"Calling Monitor {self.name()}")
-        conn = deepcopy(self.session.targets[0]._target_connection)
+        self.session.logger.open_test_step(f"Calling Monitor {self.name()}")
+        conn = deepcopy(self.session.target._target_connection)
         result = self._get_bacnet_info(conn)
         return result
 
@@ -49,10 +49,10 @@ class BACnetMonitor(IMonitor):
         conn.send(self.get_bacnet_property_identifier_id)
         recv = conn.recv_all(10000)
         if len(recv) == 0:
-            self.session._fuzz_data_logger.log_error("BACnet error response, getting BACnet device information Failed!!")
+            self.session.logger.log_error("BACnet error response, getting BACnet device information Failed!!")
             result = False
         else:
-            self.session._fuzz_data_logger.log_info(f"Getting BACnet device information succeeded")
+            self.session.logger.log_info(f"Getting BACnet device information succeeded")
             result = True
 
         conn.close()
