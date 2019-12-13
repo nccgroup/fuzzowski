@@ -1,6 +1,5 @@
-from typing import List
 from .ifuzzer import IFuzzer
-from .. import *
+from fuzzowski.mutants.spike import *
 from fuzzowski import Session
 
 """

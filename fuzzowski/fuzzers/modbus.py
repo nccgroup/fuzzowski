@@ -1,5 +1,5 @@
-from typing import List
 from .ifuzzer import IFuzzer
+from fuzzowski.mutants.spike import *
 from .. import *
 from fuzzowski import Session
 
@@ -17,7 +17,7 @@ class MODBUS(IFuzzer):
     source venv/bin/activate
     pip install -r requirements.txt
 
-    python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus -rt 0.5 -r modbus_read_coil
+    python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus -rt 0.5 -r read_coil
     python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus 
     """
 
@@ -27,7 +27,7 @@ class MODBUS(IFuzzer):
 
     @staticmethod
     def get_requests() -> List[callable]:
-        return [MODBUS.read_coil, MODBUS.read_input, MODBUS.read_holding, MODBUS.read_input, MODBUS.single_coil, MODBUS.single_register, MODBUS.multiple_coil, MODBUS.multiple_register, MODBUS.other_operations]
+        return [MODBUS.read_coil, MODBUS.read_input, MODBUS.read_holding, MODBUS.read_discrete, MODBUS.single_coil, MODBUS.single_register, MODBUS.multiple_coil, MODBUS.multiple_register, MODBUS.other_operations]
 
     # --------------------------------------------------------------- #
 
@@ -279,7 +279,7 @@ class MODBUS(IFuzzer):
         session.connect(s_get('read_holding_registers'))
 
     @staticmethod
-    def read_input(session: Session) -> None:
+    def read_discrete(session: Session) -> None:
         session.connect(s_get('ReadDiscreteInputs'))
 
     @staticmethod
