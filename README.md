@@ -36,6 +36,8 @@ and much more
 #### Protocols implemented
 * **LPD (Line Printing Daemon)**: Fully implemented
 * **IPP (Internet Printing Protocol)**: Partially implemented
+* **BACnet (Building Automation and Control networks Protocol)**: Partially implemented
+* **Modbus (ICS communication protocol)**: Partially implemented
 
 #### Installation
 ```
