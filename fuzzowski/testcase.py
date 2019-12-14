@@ -94,6 +94,7 @@ class TestCase(object):
         except exception.FuzzowskiPaused:
             return
         except exception.FuzzowskiTestCaseAborted as e:  # There was a transmission Error, we end the test case
+            self.logger.log_info(f'Test case aborted due to transmission error: {str(e)}')
             return
 
     def test(self):
@@ -164,7 +165,7 @@ class TestCase(object):
             if not condition:
                 self.add_error(e)
                 self.session.add_suspect(self)
-            raise exception.FuzzowskiTestCaseAborted(str(e))
+            raise exception.FuzzowskiTestCaseAborted(str(e))   # Abort TestCase, Connection Reset
         except exception.FuzzowskiTargetConnectionAborted as e:
             msg = f"Target connection lost (socket error: {e.socket_errno} {e.socket_errmsg})"
             condition = self.session.opts.ignore_transmission_errors if original \
@@ -175,22 +176,36 @@ class TestCase(object):
                 self.logger.log_fail(msg)
                 self.add_error(e)
                 self.session.add_suspect(self)
-                raise exception.FuzzowskiTestCaseAborted(str(e))
+                raise exception.FuzzowskiTestCaseAborted(str(e)) # Abort TestCase, Connection Failed
 
         # 2. RECEIVE DATA
         if receive:
             try:
                 self.last_recv = self.session.target.recv_all(DEFAULT_MAX_RECV)
+                if not self.last_recv:                                          # Nothing received, probably conn reset
+                    receive_failed = True
+                    error = "Nothing received. Connection Reset?"
+                elif len(request.responses) > 0:                                # Data received, Responses defined
+                    try:
+                        self.logger.log_check("Parsing response with data received")
+                        response_str = request.parse_response(self.last_recv)
+                        self.logger.log_info(response_str)
+                        receive_failed = False
+                    except exception.FuzzowskiRuntimeError as e:                # Data received, Response do not match
+                        self.logger.log_fail(str(e))                            # Abort TestCase
+                        receive_failed = False
+                        raise exception.FuzzowskiTestCaseAborted(str(e))
+                else:                                                           # Data received, no Responses defined
+                    receive_failed = False
 
                 if self.session.opts.check_data_received_each_request:
-                    self.logger.log_check("Verify some data was received from the target.")
-                    if not self.last_recv:
+                    if receive_failed:
                         # Assume a crash?
                         self.logger.log_fail("Nothing received from target.")
                         self.session.add_suspect(self)
-                    else:
-                        self.logger.log_pass("Some data received from target.")
-            except exception.FuzzowskiTargetConnectionReset as e:  # Connection reset after sending fuzzed data
+                        raise exception.FuzzowskiTestCaseAborted("Receive failed. Aborting Test Case")
+
+            except exception.FuzzowskiTargetConnectionReset as e:  # Connection reset
                 self.logger.log_info("Target connection reset.")
                 if self.session.opts.check_data_received_each_request:
                     self.logger.log_fail("Target connection reset.")

@@ -8,6 +8,7 @@ from ..exception import FuzzowskiRuntimeError
 from . import blocks
 from . import primitives
 from ..constants import LITTLE_ENDIAN
+from fuzzowski import responses
 
 names_counter = {}
 
@@ -89,6 +90,11 @@ def s_initialize(name: str):
     blocks.REQUESTS[name] = blocks.Request(name)
     blocks.CURRENT = blocks.REQUESTS[name]
 
+# --------------------------------------------------------------- #
+
+
+def s_response(response_class: type, name: str, required_vars: List[str], optional_vars: List[str], *args, **kwargs):
+    blocks.CURRENT.add_response(response_class(name, required_vars, optional_vars, *args, **kwargs))
 
 # ================================================================#
 # BLOCKS                                                          #

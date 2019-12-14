@@ -1,5 +1,6 @@
 from ..mutant import Mutant
 from .request import Request
+# from . import VARIABLES
 
 
 class Variable(Mutant):
@@ -24,5 +25,6 @@ class Variable(Mutant):
     def render(self, replace_node: str = None, replace_value: bytes = None, original: bool = False) -> bytes:
         if self._name in self.request.variables:
             return self.request.variables[self._name]
+            # return VARIABLES[self._name]
         else:
             return self._value

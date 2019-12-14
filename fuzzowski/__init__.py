@@ -23,5 +23,5 @@ from .loggers import IFuzzLogger
 from .mutants import Request
 from .mutants.spike import *
 from .session import Session
-
+from .responses import *
 __version__ = '0.8.2'

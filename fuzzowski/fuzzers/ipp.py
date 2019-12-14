@@ -1,6 +1,6 @@
 from .ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
-from fuzzowski import ITargetConnection, IFuzzLogger, Session, Request
+from fuzzowski import ITargetConnection, IFuzzLogger, Session, Request, RegexResponse
 
 """
      Value               Operation Name
@@ -317,6 +317,10 @@ class IPP(IFuzzer):
 
             s_static(b'\x03')
 
+        # Declare Response to extract job-id!
+        s_response(RegexResponse, name='create_job_response', required_vars=['jobid_p_val'], optional_vars=[],
+                   regex_list=[b'job-id.{2}(?P<jobid_p_val>.{4})'])
+
         # ================================================================#
         # SEND_URI                                                        #
         # ================================================================#
@@ -364,7 +368,9 @@ class IPP(IFuzzer):
             s_size("jobid_p_name", output_format='binary', length=2, endian='>', fuzzable=False)  # name-length
             s_string(b"job-id", name='jobid_p_name', fuzzable=False)  # name
             s_size("jobid_p_val", output_format='binary', length=2, endian='>', fuzzable=False)  # value-length
-            s_string(b"\x00\x00\x00\x02", name='jobid_p_val', fuzzable=False)  # job-id, will be changed by callback
+            # s_string(b"\x00\x00\x00\x02", name='jobid_p_val', fuzzable=False)  # job-id, will be changed by callback
+            s_variable('jobid_p_val', b'\x00\x00\x01\xe4', fuzzable=False)  # job-id, will be set by create_job response
+
 
             s_static(b"\x42")  # value-tag - ??
             s_size("username_p_name", output_format='binary', length=2, endian='>', fuzzable=False)  # name-length
@@ -507,7 +513,8 @@ class IPP(IFuzzer):
             s_size("jobid_p_name", output_format='binary', length=2, endian='>', fuzzable=False)  # name-length
             s_string(b"job-id", name='jobid_p_name', fuzzable=False)  # name
             s_size("jobid_p_val", output_format='binary', length=2, endian='>', fuzzable=False)  # value-length
-            s_string(b"\x00\x00\x01\xe4", name='jobid_p_val', fuzzable=False)  # job-id, will be changed by callback
+            # s_string(b"\x00\x00\x01\xe4", name='jobid_p_val', fuzzable=False)  # job-id, will be changed by callback
+            s_variable('jobid_p_val', b'\x00\x00\x01\xe4', fuzzable=False)  # job-id, will be changed by callback
 
             s_static(b"\x42")  # value-tag - ??
             s_size("username_p_name", output_format='binary', length=2, endian='>', fuzzable=False)  # name-length
@@ -581,7 +588,8 @@ class IPP(IFuzzer):
     @staticmethod
     def send_uri(session: Session) -> None:
         session.connect(s_get('create_job'))
-        session.connect(s_get('create_job'), s_get('send_uri'), callback=IPP.cb_set_jobid)
+        session.connect(s_get('create_job'), s_get('send_uri'))
+        # session.connect(s_get('create_job'), s_get('send_uri'), callback=IPP.cb_set_jobid)
 
     # --------------------------------------------------------------- #
 
@@ -593,7 +601,8 @@ class IPP(IFuzzer):
     @staticmethod
     def get_job_attribs(session: Session) -> None:
         session.connect(s_get('create_job'))
-        session.connect(s_get('create_job'), s_get('get_job_attribs'), callback=IPP.cb_set_jobid)
+        session.connect(s_get('create_job'), s_get('get_job_attribs'))
+        # session.connect(s_get('create_job'), s_get('get_job_attribs'), callback=IPP.cb_set_jobid)
 
 
 

@@ -1,6 +1,8 @@
 import collections
 import re
 
+from requests import Response
+
 from fuzzowski.exception import FuzzowskiRuntimeError
 from ..mutant import Mutant
 from .block import Block
@@ -28,7 +30,9 @@ class Request(Block):
         self.block_stack = []  # list of open blocks, -1 is last open block
         # self._element_mutant_index = None  # index of current mutant element within self.stack
         self._mutation_gen = self.mutation_generator()
-        self.variables: Mapping[str, int] = dict()
+        # self.variables: Mapping[str, int] = dict()
+        self.variables = blocks.VARIABLES
+        self.responses = []
 
     def push(self, item: Mutant):
         """
@@ -111,3 +115,18 @@ class Request(Block):
                 return request.names[m['mutant']]
             else:
                 raise FuzzowskiRuntimeError(f'Invalid path name: {path_name}. Mutant {m["mutant"]} not found')
+
+    def add_response(self, response: Response):
+        if response not in self.responses:
+            self.responses.append(response)
+
+    def parse_response(self, data: bytes) -> Response or None:
+        if len(self.responses) == 0:
+            return None
+        for response in self.responses:
+            try:
+                response_str = response.parse(data)
+                return response_str
+            except FuzzowskiRuntimeError:
+                pass
+        raise FuzzowskiRuntimeError('Responses defined did not match with the data')
