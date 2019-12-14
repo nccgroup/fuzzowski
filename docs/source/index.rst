@@ -24,7 +24,7 @@ Modules
 .. autosummary::
    :toctree: _modules
 
-   fuzzowski.sessions.Session
+   fuzzowski.session.Session
 
    fuzzowski.fuzzers.ifuzzer.IFuzzer
 
