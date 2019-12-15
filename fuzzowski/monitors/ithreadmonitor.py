@@ -14,5 +14,4 @@ class IThreadMonitor(Thread, IMonitor, metaclass=ABCMeta):
     def __init__(self, session: Session, *args, **kwargs):
         Thread.__init__(self)
         IMonitor.__init__(self, session, *args, **kwargs)
-        self.session = session
         self._stop = False

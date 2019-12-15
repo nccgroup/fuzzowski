@@ -1,6 +1,6 @@
-from .ifuzzer import IFuzzer
+from fuzzowski.fuzzers.ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
-from .. import *
+from fuzzowski import *
 from fuzzowski import Session
 
 

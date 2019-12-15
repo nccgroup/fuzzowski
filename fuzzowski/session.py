@@ -74,8 +74,6 @@ class Session(object):
                  receive_data_after_each_request: bool = True,
                  check_data_received_each_request: bool = False,
                  receive_data_after_fuzz: bool = False,
-                 ignore_connection_reset: bool = False,  # TODO: Delete
-                 ignore_connection_aborted: bool = False,  # TODO: Delete
                  ignore_transmission_errors: bool = True,
                  ignore_connection_issues_after_fuzz: bool = True,
                  target: Target = None,
@@ -483,11 +481,8 @@ class Session(object):
 
     def check_monitors(self):
         """ Check all monitors, and add the current test case as a suspect if a monitor returns False """
-        # TODO: Move the create suspects to the monitor itself
         for monitor in self.monitors:
-            monitor_success = monitor.run()
-            if not monitor_success:
-                self.add_suspect(self.test_case)
+            monitor.run(self.test_case)  # The monitor run() function decides whether to add a test_case as suspect or not
 
     # --------------------------------------------------------------- #
 

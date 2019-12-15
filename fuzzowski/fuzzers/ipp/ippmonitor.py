@@ -1,7 +1,6 @@
-from .imonitor import IMonitor
+from fuzzowski.monitors.imonitor import IMonitor
 from fuzzowski import Session
-from ..connections import ITargetConnection
-from copy import deepcopy
+from fuzzowski.connections import ITargetConnection
 
 
 class IPPMon(IMonitor):
@@ -58,9 +57,8 @@ class IPPMon(IMonitor):
     def help():
         return "Sends a get-attributes IPP message to the target"
 
-    def run(self):
-        self.session.logger.open_test_step(f"Calling Monitor {self.name()}")
-        conn = deepcopy(self.session.target._target_connection)
+    def test(self) -> bool:
+        conn = self.get_connection_copy()
         result = self._get_ipp_attribs(conn)
         return result
 
@@ -70,10 +68,10 @@ class IPPMon(IMonitor):
         conn.send(headers + self.get_printer_attribs_body)
         recv = conn.recv_all(10000)
         if len(recv) == 0:
-            self.session.logger.log_error("Get Printer Attributes Failed!!")
+            self.logger.log_error("Get Printer Attributes Failed!!")
             result = False
         else:
-            self.session.logger.log_info(f"Get Printer Attributes succeeded")
+            self.logger.log_info(f"Get Printer Attributes succeeded")
             result = True
 
         conn.close()

@@ -1,4 +1,4 @@
-from .ifuzzer import IFuzzer
+from fuzzowski.fuzzers.ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
 from fuzzowski import ITargetConnection, IFuzzLogger, Session, Request, RegexResponse
 

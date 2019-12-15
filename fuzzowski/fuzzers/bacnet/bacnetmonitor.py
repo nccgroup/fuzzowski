@@ -1,14 +1,11 @@
-from .imonitor import IMonitor
-from fuzzowski import Session
-from ..connections import ITargetConnection
-from time import sleep
-from copy import deepcopy
+from fuzzowski.monitors.imonitor import IMonitor
+from fuzzowski.connections import ITargetConnection
+
 
 class BACnetMonitor(IMonitor):
     """
     BACnet Monitor Module interface
-    
-    https://github.com/1modm
+    @Author: https://github.com/1modm
     """
 
     get_bacnet_property_identifier_id = (b"\x81"  # Type: BACnet/IP (Annex J)
@@ -27,9 +24,6 @@ class BACnetMonitor(IMonitor):
                                    b"\x19\x4b" # Context-specific tag, number 1, Length Value Type 1
                                    )
 
-    def __init__(self, session: Session, *args, **kwargs):
-        self.session = session
-
     @staticmethod
     def name() -> str:
         return "BACnetMon"
@@ -38,9 +32,8 @@ class BACnetMonitor(IMonitor):
     def help():
         return "Discovers and enumerates BACnet devices and collects device information based off standard requests"
 
-    def run(self):
-        self.session.logger.open_test_step(f"Calling Monitor {self.name()}")
-        conn = deepcopy(self.session.target._target_connection)
+    def test(self):
+        conn = self.get_connection_copy()
         result = self._get_bacnet_info(conn)
         return result
 
@@ -49,10 +42,10 @@ class BACnetMonitor(IMonitor):
         conn.send(self.get_bacnet_property_identifier_id)
         recv = conn.recv_all(10000)
         if len(recv) == 0:
-            self.session.logger.log_error("BACnet error response, getting BACnet device information Failed!!")
+            self.logger.log_error("BACnet error response, getting BACnet device information Failed!!")
             result = False
         else:
-            self.session.logger.log_info(f"Getting BACnet device information succeeded")
+            self.logger.log_info(f"Getting BACnet device information succeeded")
             result = True
 
         conn.close()

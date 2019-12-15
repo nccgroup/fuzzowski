@@ -18,7 +18,7 @@ import hashlib
 
 from fuzzowski import *
 from fuzzowski.fuzzers import IFuzzer
-from fuzzowski.mutants import REQUESTS
+from fuzzowski.mutants import REQUESTS, String
 from fuzzowski.restarters import IRestarter
 from fuzzowski.monitors import IMonitor, IThreadMonitor
 
@@ -76,8 +76,6 @@ class Fuzzowski(object):
                                receive_data_after_each_request=self.args.receive_data_after_each_request,
                                check_data_received_each_request=self.args.check_data_received_each_request,
                                receive_data_after_fuzz=self.args.receive_data_after_fuzz,
-                               ignore_connection_reset=self.args.ignore_connection_reset,
-                               ignore_connection_aborted=self.args.ignore_connection_aborted,
                                ignore_connection_issues_after_fuzz=self.args.ignore_connection_issues_after_fuzz,
                                target=self.target,
                                restarter=self.restart_module,
@@ -150,12 +148,6 @@ class Fuzzowski(object):
                                help="Set the number of allowed crashes in a Request before skipping it (Default 9999)")
         crash_grp.add_argument("--threshold-element", dest="crash_threshold_element", type=int, default=3,
                                help="Set the number of allowed crashes in a Primitive before skipping it (Default 3)")
-        crash_grp.add_argument('--ignore-aborted', dest='ignore_connection_aborted',
-                               help="Ignore ECONNABORTED errors",
-                               action='store_false')
-        crash_grp.add_argument('--ignore-reset', dest='ignore_connection_reset',
-                               help="Ignore ECONNRESET errors",
-                               action='store_false')
         crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_after_fuzz',
                                help="Log as error when there is any connection issue in the fuzzed node",
                                action='store_true')
@@ -279,7 +271,7 @@ class Fuzzowski(object):
         Walk the nodes setting a filename for the strings to replace the fuzzing library
 
         Args:
-            block_list (list of IFuzzable): List of blocks (usually Request)
+            block_list (list of IFuzzable): List of blocks (usualldefine_nodesy Request)
             filename (str): file name to add
 
         Returns:

@@ -1,12 +1,11 @@
-from .ifuzzer import IFuzzer
+from fuzzowski.fuzzers.ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
 from fuzzowski import Session
 
 """
 BACnet Fuzzing Module example
 Use at your own risk, and please do not use in production environments.
-https://github.com/1modm
-
+@Author: https://github.com/1modm
 Change your Device ID BACnet server below
 """
 
