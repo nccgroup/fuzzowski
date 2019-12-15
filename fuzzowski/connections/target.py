@@ -127,5 +127,9 @@ class Target(object):
     #     new_target.set_fuzz_data_logger(FuzzLoggerText(file_handle=open('/dev/null', 'a')))
     #     return new_target
 
+    @property
+    def target_connection(self):
+        return self._target_connection
+
 
 

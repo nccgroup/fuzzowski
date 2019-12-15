@@ -159,7 +159,7 @@ class Block(Mutant):
 
         # if this block is associated with a group, then multiply out the number of possible mutations.
         # TODO: Multiply when adding groups
-        #if self.group:
+        # if self.group:
         #    num_mutations *= len(self.request.names[self.group].values)
 
         return num_mutations
@@ -211,6 +211,16 @@ class Block(Mutant):
             return len(self.render())
         else:
             return sum(len(item.render()) for item in self.stack)
+
+    def list_fuzzable_mutants(self):
+        fuzzable_items = []
+        for item in self.stack:
+            if isinstance(item, Block):
+                fuzzable_items.extend(item.list_fuzzable_mutants())
+            else:
+                if item.fuzzable:
+                    fuzzable_items.append(item)
+        return fuzzable_items
 
     """
     def _mutate(self):

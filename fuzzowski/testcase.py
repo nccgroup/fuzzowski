@@ -1,11 +1,13 @@
-from typing import List
+import time
+from typing import List, TYPE_CHECKING
 
 from fuzzowski.graph import Edge
 from fuzzowski.ip_constants import DEFAULT_MAX_RECV
 from fuzzowski.mutants.blocks import Request
 from fuzzowski import exception, helpers
 
-import time
+if TYPE_CHECKING:
+    from fuzzowski.session import Session
 
 
 class TestCase(object):

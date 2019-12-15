@@ -264,7 +264,6 @@ def s_size(block_name: str, offset: int = 0, length: int = 4,
     # you can't add a size for a block currently in the stack.
     if block_name in blocks.CURRENT.block_stack:
         raise FuzzowskiRuntimeError("CAN NOT ADD A SIZE FOR A BLOCK CURRENTLY IN THE STACK")
-    name = _get_name_if_not_chosen(name, blocks.Size)
     size = blocks.Size(
         block_name, blocks.CURRENT, offset, length, endian, output_format, inclusive, signed, math, fuzzable, name
     )

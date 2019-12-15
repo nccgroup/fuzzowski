@@ -298,8 +298,10 @@ class Session(object):
         """
         if test_case_id > self.total_mutations:
             test_case_id = self.total_mutations
-        # 1st. Reset all
-        self._reset()
+
+        if self.test_case is not None and test_case_id < self.test_case.id:
+            # 1st. Reset all
+            self._reset()
         if test_case_id == 0:
             return None
         for test_case in self._test_cases:

@@ -1,7 +1,7 @@
 import os
 import sys
 import signal
-
+from typing import TYPE_CHECKING
 from prompt_toolkit import HTML, print_formatted_text
 from prompt_toolkit.styles import Style, merge_styles
 
@@ -9,6 +9,9 @@ from fuzzowski import constants
 from fuzzowski import exception
 
 from .prompt import CommandPrompt
+
+if TYPE_CHECKING:
+    from fuzzowski.session import Session
 
 
 class SessionPrompt(CommandPrompt):
@@ -26,6 +29,10 @@ class SessionPrompt(CommandPrompt):
         """ Contains the full list of commands"""
         commands = super().get_commands()
         commands.update({
+            'env': {
+                'desc': 'Show Session Information',
+                'exec': self._cmd_env
+            },
             'goto': {
                 'desc': 'Go to test case by index',
                 'exec': self._cmd_goto
@@ -89,8 +96,8 @@ class SessionPrompt(CommandPrompt):
     # --------------------------------------------------------------- #
 
     def get_prompt(self):
-        host = self.session.target._target_connection.host
-        port = str(self.session.target._target_connection.port)
+        host = self.session.target.target_connection.host
+        port = str(self.session.target.target_connection.port)
 
         return HTML('[<testn>{} of {}</testn>] '
                     '<b>➜</b> <host>{}</host>:<port>{}</port> $ '
@@ -142,9 +149,14 @@ class SessionPrompt(CommandPrompt):
 
     # --------------------------------------------------------------- #
 
-    def _print_error(self, message):
-        print_formatted_text(HTML(f'<red>{message}</red>'),
+    def _print_color(self, color, message):
+        print_formatted_text(HTML(f'<{color}>{message}</{color}>'),
                              style=self.get_style())
+
+    # --------------------------------------------------------------- #
+
+    def _print_error(self, message):
+        self._print_color('red', message)
 
     # ================================================================#
     # Command handlers                                                #
@@ -172,9 +184,32 @@ class SessionPrompt(CommandPrompt):
         except exception.FuzzowskiRuntimeError as e:
             self._print_error(e)
 
+    def _cmd_env(self, _):
+        self._print_color('gold', 'Session Options:')
+        for k, v in self.session.opts.__dict__.items():
+            print(f'  {str(k)} = {str(v)}')
+
+        self._print_color('gold', '\nSuspects:')
+        self._cmd_suspects([])
+
+        self._print_color('gold', '\nDisabled Elements:')
+        self._cmd_list_disabled_elements([])
+
+        self._print_color('gold', '\nPaths:')
+        actual_request = None
+        if self.session.test_case is not None:
+            actual_request = self.session.test_case.request
+        for path in self.session.graph.path_iterator():
+            print(' -> '.join([edge.dst.name for edge in path]))
+            for edge in path:
+                mutants_list = edge.dst.list_fuzzable_mutants()
+                print(f'  {edge.dst.name} {"[DISABLED]" if edge.dst.disabled else ""}')
+                for mutant in mutants_list:
+                    print(f'    {edge.dst.name}.{mutant.name} {"[DISABLED]" if mutant.disabled else ""}')
+
     def _cmd_list_disabled_elements(self, tokens):
         for path_name, elem in self.session.disabled_elements.items():
-            print(f'{path_name}: {elem}')
+            print(f'{path_name} ({type(elem).__name__})')
 
     # --------------------------------------------------------------- #
 

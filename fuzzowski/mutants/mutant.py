@@ -52,7 +52,7 @@ class Mutant(IMutant):
         return next(self._mutation_gen)
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, repr(self._value))
+        return f'<{self.__class__.__name__} {self.name} = {repr(self._value)}>'
 
     def __len__(self):
         """
