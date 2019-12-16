@@ -1,0 +1,24 @@
+language: python
+sudo: false
+python:
+  - 3.6
+
+matrix:
+  include:
+    - python: "3.7"
+      dist: xenial    # required for Python 3.7 (travis-ci/travis-ci#9069)
+      sudo: required  # required for Python 3.7 (travis-ci/travis-ci#9069)
+before_install:
+  - python --version
+  - pip install -U pip
+  - pip install -r requirements.txt
+  - pip install -U pytest
+  - pip install codecov
+  - pip install coveralls
+#install:
+#  - pip install ".[test]" . # install package + test dependencies
+script:
+  - pytest # run tests
+after_success:
+  - codecov # submit coverage
+  - coveralls
