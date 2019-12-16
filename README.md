@@ -12,6 +12,10 @@
        ██     ██                by Mario Rivas
 ```
 
+#
+
+[![Travis](https://travis-ci.com/nccgroup/fuzzowski.svg?branch=master)](https://travis-ci.com/nccgroup/fuzzowski)
+
 The idea is to be the Network Protocol Fuzzer that we will __want__ to use.
 
 The aim of this tool is to assist during the whole process of fuzzing a network protocol, 
