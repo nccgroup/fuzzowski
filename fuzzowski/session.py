@@ -164,6 +164,7 @@ class Session(object):
         self.is_paused = True
         self.total_mutations = self.num_mutations
         self.prompt = None
+        self.reset()
         # self.prompt = SessionPrompt(self) # Placed in start() to avoid tests failing due lack of input
 
     # ================================================================#

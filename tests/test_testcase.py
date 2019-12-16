@@ -2,11 +2,13 @@ from fuzzowski import constants, Target, SocketConnection
 from fuzzowski.graph import Graph
 from fuzzowski.mutants.spike import *
 import hashlib
+import pytest
 
 from fuzzowski.session import Session
 from fuzzowski.testcase import TestCase
 
 
+@pytest.mark.filterwarnings("ignore:PytestCollectionWarning")
 def test_testcase1():
 
     # b'A :3.W'
