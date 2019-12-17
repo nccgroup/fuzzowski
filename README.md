@@ -22,11 +22,21 @@ The aim of this tool is to assist during the whole process of fuzzing a network 
 allowing to define the communications, helping to identify the "suspects" of crashing a service,
 and much more
 
+#### Last Changes
+
+[16/12/2019]
+* **Data Generation modules** fully recoded (Primitives, Blocks, Requests)
+  * Improved Strings fuzzing libraries, allowing also for custom lists, files and callback commands
+  * **Variable** data type, which takes a variable set by the session, the user or a Response
+* **Session** fully recoded. Now it is based on **TestCase**s, which contains all the information needed to perform the request, check the response, store data such as errors received, etc.
+* **Responses** added. Now you can define responses with s_response(), This allows to check the response from the server, set variables and even perform additional tests on the response to check if something is wrong
+* **Monitors** now automatically mark TestCases as suspect if they fail
+* Added the **IPP (Internet Printing Protocol)** Fuzzer that we used to find several vulnerabilities in different printer brands during our printers research project (https://www.youtube.com/watch?v=3X-ZnlyGuWc&t=7s) 
+
 #### Features
 * Based on Sulley Fuzzer for data generation [https://github.com/OpenRCE/sulley]
 * Actually, forked BooFuzz (which is a fork of Sulley) [https://github.com/jtpereyda/boofuzz ]
 * Python3
-* Improved Strings fuzzing libraries, allowing also for custom lists, files and callback commands
 * Not random (finite number of possibilities)
 * Requires to “create the packets” with types (spike fuzzer style)
 * Also allows to create ""Raw"" packets from parameters, with injection points (quite useful for fuzzing simple protocols)
@@ -166,15 +176,3 @@ Use the raw feature of IPP to fuzz the finger protocol:
 Use the raw feature of IPP to fuzz the finger protocol, but instead of using the predefined mutations, use a file:
 
 ```python -m fuzzowski printer 79 -f raw -r '{{root}}\n' --file 'path/to/my/fuzzlist'```
-
-
-#### Next Steps
-* ~~Recode the whole session and primitive modules~~ Finally recoded!
-* Add support to L2 protocols (boofuzz has connection modules, but I have not tested them in python3)
-* Add ThreadedMonitors to the session
-* Implement more generic monitors (process, ICMP, ...)
-* Implement more generic restarters (?)
-* Possibility for random mutations (infinite number of tests)
-* Raw packet parsing from a PCAP or hex for quick fuzzing??
-* More protocols!
-* ???
