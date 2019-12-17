@@ -8,25 +8,25 @@ def test_response():
     s_mutant(b'A', name='mutant21', mutations=[b'B', b'C', b'D'])
     s_mutant(b'W', name='mutant22', mutations=[b'X', b'Y', b'Z'])
 
-    s_response(RegexResponse, name='response_test', required_vars=['id'], optional_vars=['path'],
-               regex_list=[b'id=(?P<id>[a-zA-Z0-9]+)', b'path=(?P<path>[a-zA-Z0-9/_]+)'])
+    s_response(RegexResponse, name='response_test', required_vars=['idc'], optional_vars=['path'],
+               regex_list=[b'idc=(?P<idc>[a-zA-Z0-9]+)', b'path=(?P<path>[a-zA-Z0-9/_]+)'])
 
     request = s_get('testreq1')
     assert len(request.responses) == 1
 
-    assert 'id' not in request.variables
+    assert 'idc' not in request.variables
 
     response = request.responses[0]
     assert response.name == 'response_test'
-    r_str = response.parse(b'id=01&path=/asd')
-    assert request.variables['id'] == b'01'
+    r_str = response.parse(b'idc=01&path=/asd')
+    assert request.variables['idc'] == b'01'
     assert request.variables['path'] == b'/asd'
 
-    r_str = response.parse(b'test=1&id=02&test2=2')
-    assert request.variables['id'] == b'02'
+    r_str = response.parse(b'test=1&idc=02&test2=2')
+    assert request.variables['idc'] == b'02'
     assert request.variables['path'] is None
 
-    with pytest.raises(FuzzowskiRuntimeError):  # id is required var
+    with pytest.raises(FuzzowskiRuntimeError):  # idc is required var
         r_str = response.parse(b'path=/')
 
     s_response(RegexResponse, name='response_error', required_vars=['error'], optional_vars=[],
@@ -44,7 +44,7 @@ def test_response():
         except FuzzowskiRuntimeError:
             assert response.name == 'response_test'
     assert request.variables['error'] == b''
-    assert request.variables['id'] is None
+    assert request.variables['idc'] is None
     assert request.variables['path'] is None
 
     with pytest.raises(FuzzowskiRuntimeError):
