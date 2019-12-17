@@ -39,6 +39,7 @@ STYLE = {
     'step': 'bold violet',
     'send': 'cyan',
     'receive': 'cyan',
-    'pass': 'bold green'
+    'pass': 'bold green',
+    'warning': 'bold orange',
 
     }

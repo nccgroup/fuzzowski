@@ -144,6 +144,7 @@ class Session(object):
         self.suspects: Dict[int, TestCase or None] = {}  # Dictionary of suspect test cases
         self.disabled_elements: Dict[str, 'Mutant'] = {}  # Dictionary of disabled Mutants or Requests
         self.latest_tests = []  # List of N test cases
+        self.previous_test_possible = False
 
         self._restarter = restarter
 
@@ -188,7 +189,6 @@ class Session(object):
         """
         if self.test_case is not None:
             self.test_case.run()
-            self.add_latest_test(self.test_case)
             self.check_monitors()
             # self.process_errors()  # TODO: Move add suspects from different parts of the code to this function!
         else:
@@ -434,11 +434,13 @@ class Session(object):
                         self.disable_by_path_name(f'{request_name}.{mutant_name}')
 
     def add_last_case_as_suspect(self, error):
-        if len(self.latest_tests) == 0:
+        if len(self.latest_tests) == 0 or self.previous_test_possible is False:
             return  # No latest case to add
+        self.logger.log_warn("Adding latest test case as a suspect")
         latest_test = self.latest_tests[0]
         latest_test.add_error(error)
         self.add_suspect(latest_test)
+        self.previous_test_possible = False
 
     # --------------------------------------------------------------- #
 
@@ -463,6 +465,7 @@ class Session(object):
 
     def add_latest_test(self, test_case):
         """ Add a test case to the list of latest test cases keeping the maximum number"""
+        self.previous_test_possible = True
         if len(self.latest_tests) == self.opts.tests_number_to_keep:
             self.latest_tests.pop() # Take latest test
         self.latest_tests.insert(0, test_case)

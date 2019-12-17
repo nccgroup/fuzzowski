@@ -70,6 +70,10 @@ class FuzzLogger(IFuzzLogger):
         for fuzz_logger in self._fuzz_loggers:
             fuzz_logger.log_send(data=data)
 
+    def log_warn(self, description):
+        for fuzz_logger in self._fuzz_loggers:
+            fuzz_logger.log_warn(description=description)
+
     def failure_summary(self):
         """Return test summary string based on fuzz logger results.
 

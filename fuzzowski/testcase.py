@@ -51,14 +51,14 @@ class TestCase(object):
         # TODO: Mechanism for not opening if want to keep an open connection between fuzzed packets
         #  (e.g. CLI in Telnet Session)
         try:
-            self.open_fuzzing_target(retry=retry)
-
             self.logger.open_test_case(f"{self.id}: {self.name} {'[SENDING ORIGINAL]' if not fuzz else ''}",
                                        name=self.name, index=self.id)
             self.logger.log_info(
                 f"Type: {type(self.request.mutant).__name__}. "
                 f"Default value: {repr(self.request.mutant.original_value)}. "
                 f"Case {self.id} of {self.session.num_mutations} overall.")
+
+            self.open_fuzzing_target(retry=retry)
 
             fuzzed_sent = False
             for edge in self.path:  # Now we go through our path, sending each request
@@ -83,7 +83,7 @@ class TestCase(object):
                     callback_data = self._callback_current_node(node=request, edge=edge, original=True)
                     self.transmit(request, callback_data=callback_data, original=not fuzzed_sent)
 
-                if self.session.opts.new_connection_between_requests:  # Reopen connection
+                if self.session.opts.new_connection_between_requests and len(self.path) > 1:  # Reopen connection
                     try:
                         self.session.target.close()
                         self.open_fuzzing_target(retry=False)
@@ -93,6 +93,7 @@ class TestCase(object):
                         raise exception.FuzzowskiTestCaseAborted(str(e))
 
             self.session.target.close()
+            self.session.add_latest_test(self)
         except exception.FuzzowskiPaused:
             return
         except exception.FuzzowskiTestCaseAborted as e:  # There was a transmission Error, we end the test case
@@ -120,8 +121,7 @@ class TestCase(object):
                     self.logger.log_fail("Cannot connect to target; Retrying... ")
                     target.open()  # Second try, just in case we have a network error not caused by the fuzzer
                 except (exception.FuzzowskiTargetConnectionFailedError, Exception) as e:
-                    self.logger.log_error("Cannot connect to target; target presumed down. Note: This likely "
-                                          "indicates a failure caused by the previous test case. ")
+                    self.logger.log_error("Cannot connect to target; target presumed down.")
                     self.session.add_last_case_as_suspect(e)
                     # raise
                     self.session.restart_target()  # Restart the target if a restarter was set
@@ -231,8 +231,9 @@ class TestCase(object):
         Returns: bool indicating if the target has recovered (False happens if the session is paused before that)
         """
         # When the connection fails, we want to pause the fuzzer, save the packets,etc
-        # self.is_paused = True
         recovered = False
+        if self.session.is_paused:
+            raise exception.FuzzowskiPaused('Paused while waiting for recovery')
         self.logger.open_test_step('Waiting for target recovery')
         while not recovered:
             if self.session.is_paused:

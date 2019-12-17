@@ -70,6 +70,10 @@ class FuzzLoggerText(ifuzz_logger_backend.IFuzzLoggerBackend):
         self._print_log_msg(msg=description,
                             msg_type='pass')
 
+    def log_warn(self, description):
+        self._print_log_msg(msg=description,
+                            msg_type='warning')
+
     def _print_log_msg(self, msg_type, msg=None, data=None):
         try:
             print_formatted_text(helpers.color_formatted_text(helpers.format_log_msg(msg_type=msg_type, description=msg,

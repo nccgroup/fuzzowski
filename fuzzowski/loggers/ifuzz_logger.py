@@ -163,8 +163,21 @@ class IFuzzLogger(object):
     @abc.abstractmethod
     def log_error(self, description):
         """
-        Records an internal error. This informs the operaor that the test was
+        Records an internal error. This informs the operator that the test was
         not completed successfully.
+
+        :param description: Received data.
+        :type description: str
+
+        :return: None
+        :rtype: None
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def log_warn(self, description):
+        """
+        Records an important message
 
         :param description: Received data.
         :type description: str

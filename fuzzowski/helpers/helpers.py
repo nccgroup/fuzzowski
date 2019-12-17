@@ -68,18 +68,25 @@ test_step_info = {
         'css_class': 'log-check'
     },
     'fail': {
-        'indent': 3,
+        'indent': 2,
         'title': 'Check Failed',
         'html': 'Check Failed: {msg}',
         'terminal': "Check Failed: {msg}",
         'css_class': 'log-fail'
     },
     'pass': {
-        'indent': 3,
+        'indent': 2,
         'title': 'Check OK',
         'html': 'Check OK: {msg}',
         'terminal': "Check OK: {msg}",
         'css_class': 'log-pass'
+    },
+    'warning': {
+        'indent': 2,
+        'title': 'Warn',
+        'html': 'Warn: {msg}',
+        'terminal': "Warn: {msg}",
+        'css_class': 'log-fail'
     },
 }
 
@@ -436,7 +443,8 @@ def repr_input_bytes(input_bytes):
             b += bytes([c]*i)
             hexb += '{:02x} '.format(c)
 
-    return hexb + '- ' + repr(b)
+    return repr(b)
+    # return hexb + '- ' + repr(b)
 
 
 def mkdir_safe(directory_name):

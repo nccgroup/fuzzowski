@@ -254,7 +254,7 @@ class SessionPrompt(CommandPrompt):
     def _cmd_print_test_case(self, tokens):
         try:
             test_case_index = int(tokens[0])
-        except IndexError: # No index specified, print actual case
+        except IndexError:  # No index specified, print actual case
             if self.session.test_case is not None:
                 self.session.test_case.print_requests()
             return
