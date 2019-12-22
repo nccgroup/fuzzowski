@@ -187,6 +187,7 @@ class TestCase(object):
                 if not self.last_recv:                                          # Nothing received, probably conn reset
                     receive_failed = True
                     error = "Nothing received. Connection Reset?"
+                    raise exception.FuzzowskiTestCaseAborted("Receive failed. Aborting Test Case")
                 elif len(request.responses) > 0:                                # Data received, Responses defined
                     try:
                         self.logger.log_check("Parsing response with data received")

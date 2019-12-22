@@ -103,7 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-/fuzzowski_results
+fuzzowski_results/
 .idea
 
 

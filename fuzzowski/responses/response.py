@@ -2,8 +2,8 @@ import pprint
 from typing import List, Mapping
 from abc import ABCMeta, abstractmethod
 
-from ..mutants.blocks import VARIABLES
 from fuzzowski.exception import FuzzowskiRuntimeError
+from fuzzowski.mutants import blocks
 
 
 class Response(object, metaclass=ABCMeta):
@@ -70,13 +70,13 @@ class Response(object, metaclass=ABCMeta):
         Args:data
             vars_set: The variables
         """
-        VARIABLES.update(vars_set)
+        blocks.VARIABLES.update(vars_set)
 
     def _empty_vars(self):
         """
         Set all vars of this Response to None
         """
         for var in self.required_vars + self.optional_vars:
-            VARIABLES[var] = None
+            blocks.VARIABLES[var] = None
 
 

@@ -69,10 +69,9 @@ def test_session_movements():
     assert session.test_case is None
     assert session.mutant_index == 0
 
-    test_case = session.goto(0)
-    assert test_case is None and test_case == session.test_case
+    test_case = session.goto(0) # goto(0) == goto(1)
+    assert test_case is not None and test_case == session.test_case
 
-    test_case = session.next()
     assert test_case.id == 1
     assert test_case.request == r1
     assert test_case.request.mutant.name == 'mutant11'
@@ -92,9 +91,8 @@ def test_session_movements():
     assert test_case.request.mutant.name == 'mutant21'
     assert r1.mutant_index == 0  # R1 should have been reset
 
-    test_case = session.goto(0)
-    assert test_case is None and test_case == session.test_case
-    test_case = session.next()
+    test_case = session.goto(1)
+    assert test_case is not None and test_case == session.test_case
     assert test_case.id == 1
     assert test_case.request == r1
     assert test_case.request.mutant.name == 'mutant11'

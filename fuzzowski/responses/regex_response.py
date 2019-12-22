@@ -1,7 +1,7 @@
 from typing import List, Mapping
 from .response import Response
 import re
-from fuzzowski import FuzzowskiRuntimeError
+from fuzzowski.exception import FuzzowskiRuntimeError
 
 
 class RegexResponse(Response):

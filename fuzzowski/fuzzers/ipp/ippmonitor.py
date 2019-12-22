@@ -2,7 +2,6 @@ from fuzzowski.monitors.imonitor import IMonitor
 from fuzzowski import Session
 from fuzzowski.connections import ITargetConnection
 
-
 class IPPMon(IMonitor):
     get_printer_attribs_headers = ("POST {} HTTP/1.1\r\n"
                                    "Host: {}\r\n"
@@ -63,16 +62,21 @@ class IPPMon(IMonitor):
         return result
 
     def _get_ipp_attribs(self, conn: ITargetConnection):
-        conn.open()
-        headers = self.get_printer_attribs_headers.format(self.path, conn.info).encode()
-        conn.send(headers + self.get_printer_attribs_body)
-        recv = conn.recv_all(10000)
-        if len(recv) == 0:
-            self.logger.log_error("Get Printer Attributes Failed!!")
+        try:
+            conn.open()
+            headers = self.get_printer_attribs_headers.format(self.path, conn.info).encode()
+            conn.send(headers + self.get_printer_attribs_body)
+            recv = conn.recv_all(10000)
+            if len(recv) == 0:
+                self.logger.log_error("Get Printer Attributes Failed!!")
+                result = False
+            else:
+                self.logger.log_info(f"Get Printer Attributes succeeded")
+                result = True
+        except Exception as e:
+            self.logger.log_error(f"Get Printer Attributes Failed!! Exception while receiving: {type(e).__name__}. {str(e)}")
             result = False
-        else:
-            self.logger.log_info(f"Get Printer Attributes succeeded")
-            result = True
+        finally:
+            conn.close()
 
-        conn.close()
         return result

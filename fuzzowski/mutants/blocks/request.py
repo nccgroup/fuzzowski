@@ -1,13 +1,11 @@
 import collections
 import re
 
-from requests import Response
-
 from fuzzowski.exception import FuzzowskiRuntimeError
 from ..mutant import Mutant
 from .block import Block
-from typing import Mapping
 from .. import blocks
+from fuzzowski.responses.response import Response
 
 
 class Request(Block):

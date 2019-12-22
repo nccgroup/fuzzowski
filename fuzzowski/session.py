@@ -176,8 +176,10 @@ class Session(object):
         """
         Starts the prompt once the session is prepared
         """
+        # self.logger.log_info("Starting Fuzzowski Session")
         self.prompt = SessionPrompt(self)
         self.reset()
+        self.goto(1)
         self.import_file(self.session_filename)
         self.prompt.start_prompt()
 
@@ -293,20 +295,25 @@ class Session(object):
         """
         Prepare the session, self.test_case and self._test_cases in the test_case with the test_case_id specified.
         Args:
-            test_case_id: The test_case to go. 0 go to an state of a new session.
+            test_case_id: The test_case to go. 0 == 1 go to an state of a new session.
 
         Returns: The test_case specified by test_case_id, or None if test_case_id is 0
         """
         if test_case_id > self.total_mutations:
             test_case_id = self.total_mutations
 
-        if self.test_case is not None and test_case_id < self.test_case.id:
+        if test_case_id == 0:
+            test_case_id = 1
+        if self.test_case is not None and test_case_id == self.test_case.id:
+            return self.test_case
+        elif self.test_case is not None and test_case_id < self.test_case.id:
             # 1st. Reset all
             self._reset()
-        if test_case_id == 0:
-            return None
+        # if test_case_id == 0:
+        #     return None
         for test_case in self._test_cases:
             if test_case.id == test_case_id:
+                # self.logger.log_info(f'Test case {test_case.id} reached')
                 return test_case
 
     def goto_path(self, path_name) -> TestCase or None:
@@ -397,7 +404,10 @@ class Session(object):
     # =====================================================   ===========#
 
     def connect(self, src: Request, dst: Request = None, callback: callable = None):
-        self.graph.connect(src, dst, callback)
+        try:
+            self.graph.connect(src, dst, callback)
+        except exception.FuzzowskiRuntimeError:
+            pass
         if type(src) is Request and src not in self._requests:
             self._requests.append(src)
         if type(dst) is Request and dst not in self._requests:

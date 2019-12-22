@@ -1,5 +1,6 @@
 import traceback
 from prompt_toolkit import HTML, print_formatted_text
+from prompt_toolkit.formatted_text import FormattedText
 
 
 class CommandHandler(object):
@@ -15,7 +16,8 @@ class CommandHandler(object):
             if 'exec' in entry and entry['exec']:
                 entry['exec'](cmd[1:])
         else:
-            print_formatted_text(HTML('<style fg="ansired">{}: Command not found</style>'.format(cmd[0])))
+            print_formatted_text(
+                FormattedText([('class:red', f'{cmd[0]}: Command not found')]))
 
     # ---------------------------------------------------------------#
 
@@ -25,6 +27,6 @@ class CommandHandler(object):
         try:
             self.execute_command(cmd)
         except Exception as e:
-            print_formatted_text(HTML('<style fg="ansired">Execution of {} failed. {}</style>'
-                                      .format(cmd[0], traceback.format_exc())))
+            print_formatted_text(
+                FormattedText([('class:red', f'Execution of {cmd[0]} failed. {traceback.format_exc()}')]))
 

@@ -109,7 +109,8 @@ class SessionPrompt(CommandPrompt):
         if self.session.test_case is not None:
             toolbar_message = HTML(f'Test Case [<bttestn>{self.session.mutant_index}</bttestn>] '
                                    f'of [<bttestn>{self.session.total_mutations}</bttestn>]'
-                                   f': Fuzzing <bttestn>{self.session.test_case.name}</bttestn>')
+                                   f': Fuzzing Path <bttestn>{self.session.test_case.path_name}</bttestn> '
+                                   f' Mutant <bttestn>{self.session.test_case.short_name}</bttestn>')
         else:
             toolbar_message = HTML(f'Test Case [<bttestn>{self.session.mutant_index}</bttestn>] '
                                    f'of [<bttestn>{self.session.total_mutations}</bttestn>]')
@@ -200,12 +201,13 @@ class SessionPrompt(CommandPrompt):
         if self.session.test_case is not None:
             actual_request = self.session.test_case.request
         for path in self.session.graph.path_iterator():
-            print(' -> '.join([edge.dst.name for edge in path]))
+            print(f"[{' -> '.join([edge.dst.name for edge in path])}]")
             for edge in path:
                 mutants_list = edge.dst.list_fuzzable_mutants()
                 print(f'  {edge.dst.name} {"[DISABLED]" if edge.dst.disabled else ""}')
                 for mutant in mutants_list:
                     print(f'    {edge.dst.name}.{mutant.name} {"[DISABLED]" if mutant.disabled else ""}')
+            print('')
 
     def _cmd_list_disabled_elements(self, tokens):
         for path_name, elem in self.session.disabled_elements.items():
