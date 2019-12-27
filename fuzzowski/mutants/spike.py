@@ -539,12 +539,15 @@ def s_group(value: bytes, values: List[bytes], name: str = None):
 # --------------------------------------------------------------- #
 
 # ALIASES
+
+
+s_int = s_dword
+# s_long = s_int = s_dword
 # For now I'm not going to have them
 # s_dunno = s_raw = s_unknown = s_static
 # s_sizer = s_size
 # s_bit = s_bits = s_bit_field
 # s_char = s_byte
 # s_short = s_word
-# s_long = s_int = s_dword
 # s_double = s_qword
 # s_repeater = s_repeat

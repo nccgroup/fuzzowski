@@ -13,8 +13,11 @@ Licensed under GNU General Public License v2.0 - See LICENSE.txt
 """
 
 import argparse
+import importlib
+import os
 import re
 import hashlib
+import sys
 
 from fuzzowski import *
 from fuzzowski.fuzzers import IFuzzer
@@ -110,6 +113,15 @@ class Fuzzowski(object):
         """
         Initializes the argparser inside self.parser
         """
+
+        # This parser0 is a little parser to be able to append fuzzer modules with include before
+        parser0 = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
+        parser0.add_argument('-i', dest="include", nargs='+', help="Include modules from path[s]")
+        args0, others = parser0.parse_known_args()
+        if args0.include is not None:
+            for path in args0.include:
+                self.import_modules_from_path(path)
+
         self.parser = argparse.ArgumentParser(
             description= logo ,
             formatter_class=argparse.RawTextHelpFormatter)
@@ -166,6 +178,8 @@ class Fuzzowski(object):
             protocols_help += '  {}: [{}]\n'.format(fuzzer_protocol.name, methods)
         protocols_help += '  {}: [{}]'.format('raw', repr("'\x01string\n' '\x02request2\x00' ...").strip('"'))
         fuzzers_grp = self.parser.add_argument_group('Fuzzers')
+        fuzzers_grp.add_argument('-i', dest="include", nargs='+', help="Include modules from path[s]",
+                                 metavar="PATH")
         fuzzers_grp.add_argument("-f", "--fuzz", dest="fuzz_protocol", help='Available Protocols', required=True,
                                  choices=fuzzers)
         fuzzers_grp.add_argument("-r", "--requests", dest="fuzz_requests", nargs='+', default=[],
@@ -344,6 +358,22 @@ class Fuzzowski(object):
         """Start the session fuzzer!"""
         self.session.start()
 
+    # --------------------------------------------------------------- #
+
+    @staticmethod
+    def import_modules_from_path(path):
+        if os.path.isdir(path):
+            modules = [f.split('.')[0] for f in os.listdir(path) if f.endswith(".py")]
+            sys.path.insert(0, path)
+            for module in modules:
+                importlib.import_module(module)
+        elif os.path.isfile(path) and path.endswith('.py'):
+            sys.path.insert(0, os.path.dirname(path))
+            module = os.path.split(path)[-1].split('.py')[0]
+            importlib.import_module(module)
+        else:
+            print(f'The path {path} is not valid')
+            exit(1)
 
 # --------------------------------------------------------------- #
 

@@ -28,3 +28,11 @@ class Variable(Mutant):
             # return VARIABLES[self._name]
         else:
             return self._value
+
+    @property
+    def original_value(self) -> bytes:
+        if self._name in self.request.variables:
+            return self.request.variables[self._name]
+            # return VARIABLES[self._name]
+        else:
+            return self._render(self._original_value)

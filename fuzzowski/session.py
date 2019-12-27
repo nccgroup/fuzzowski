@@ -316,7 +316,7 @@ class Session(object):
                 # self.logger.log_info(f'Test case {test_case.id} reached')
                 return test_case
 
-    def goto_path(self, path_name) -> TestCase or None:
+    def goto_path(self, path_name: str) -> TestCase or None:
         """
         Prepare the session, self.test_case and self._test_cases in the test_case with the path_name identified.
         Args:
@@ -339,9 +339,11 @@ class Session(object):
         if self.test_case is None:
             return self.next()
         else:
+            self.logger.log_info(f'Skipping {self.test_case.request.name}.{self.test_case.request.mutant.name}')
             test_case_mutant = self.test_case.request.mutant
             while self.test_case is not None and test_case_mutant == self.test_case.request.mutant:
                 self.next()
+            self.logger.log_info(f'Next element: {self.test_case.request.name}.{self.test_case.request.mutant.name}')
             return self.test_case
 
     # --------------------------------------------------------------- #
@@ -356,8 +358,11 @@ class Session(object):
             self.test_case = next(self._test_cases)
             return self.test_case
         except StopIteration:
-            self.reset()
-            return None  # All test cases exhausted
+            # self.reset()
+            self.goto(1)
+            self.is_paused = True
+            return self.test_case
+            # return None  # All test cases exhausted
 
     # --------------------------------------------------------------- #
 
@@ -418,7 +423,7 @@ class Session(object):
     # Suspects, disabled elements                                     #
     # ================================================================#
 
-    def add_suspect(self, test_case):
+    def add_suspect(self, test_case: TestCase):
         if test_case.id not in self.suspects:
             self.suspects[test_case.id] = test_case
             self.logger.log_info(f'Added test case {test_case.id} as a suspect')
@@ -426,16 +431,17 @@ class Session(object):
             # Check if crash threshold
             request_crashes = {}
             mutant_crashes = {}
+            # TODO: REQUEST WILL HAVE CHANGED WHEN CALLED THIS. FIX
             for suspect in self.suspects.values():
                 if suspect is not None:
-                    request_name = suspect.request.name
+                    request_name = suspect.request_name
                     request_crashes[request_name] = request_crashes.get(request_name, 0) + 1
                     if request_crashes[request_name] >= self.opts.crash_threshold_request:
                         # Disable request! :o
                         self.logger.log_fail(f'Crash threshold reached for request {request_name}. Disabling it')
                         self.disable_by_path_name(request_name)
 
-                    mutant_name = suspect.request.mutant.name
+                    mutant_name = suspect.mutant_name
                     mutant_crashes[mutant_name] = mutant_crashes.get(mutant_name, 0) + 1
                     if mutant_crashes[mutant_name] >= self.opts.crash_threshold_element:
                         # Disable mutant! :o
@@ -443,7 +449,7 @@ class Session(object):
                                               f'Disabling it')
                         self.disable_by_path_name(f'{request_name}.{mutant_name}')
 
-    def add_last_case_as_suspect(self, error):
+    def add_last_case_as_suspect(self, error: Exception):
         if len(self.latest_tests) == 0 or self.previous_test_possible is False:
             return  # No latest case to add
         self.logger.log_warn("Adding latest test case as a suspect")
@@ -454,15 +460,15 @@ class Session(object):
 
     # --------------------------------------------------------------- #
 
-    def disable_current_mutant(self, disable=True):
+    def disable_current_mutant(self, disable: bool = True):
         if self.test_case is not None:
             self.test_case.request.mutant.disabled = disable
 
-    def disable_current_request(self, disable=True):
+    def disable_current_request(self, disable: bool = True):
         if self.test_case is not None:
             self.test_case.request.disabled = disable
 
-    def disable_by_path_name(self, path_name, disable=True):
+    def disable_by_path_name(self, path_name: str, disable: bool = True):
         disabled_element = Request.get_mutant_by_path(path_name)
         disabled_element.disabled = disable
         if disable:  # Add to self.disabled_elements dictionary
@@ -473,8 +479,9 @@ class Session(object):
             except KeyError:
                 pass
 
-    def add_latest_test(self, test_case):
+    def add_latest_test(self, test_case: TestCase):
         """ Add a test case to the list of latest test cases keeping the maximum number"""
+        self.logger.log_info(f"Adding {test_case.id} to latest cases")
         self.previous_test_possible = True
         if len(self.latest_tests) == self.opts.tests_number_to_keep:
             self.latest_tests.pop() # Take latest test
@@ -527,9 +534,16 @@ class Session(object):
     # ================================================================#
 
     def save_session_state(self) -> dict:
+        """
+        Save the actual session state and returns it in a dictionary
+
+        Returns: a dictionary with the actual session state
+
+        @see self.load_session_state()
+        """
         state = {
             "mutant_index": self.mutant_index,
-            "suspect_ids": [key for key in self.suspects.keys()],
+            "suspect_ids": [key for key in self.suspects.keys()],  # TODO: Save also the contents of the suspect
             "disabled_names": [key for key in self.disabled_elements.keys()]
             # TODO: crashes, last recv...
         }
@@ -538,6 +552,13 @@ class Session(object):
     # --------------------------------------------------------------- #
 
     def load_session_state(self, state: dict) -> None:
+        """
+        Loads the dictionary with the actual session state
+
+        Args:
+            state: A dictionary with the actual configuration
+        @see self.save_session_state()
+        """
         self.goto(state['mutant_index'])
         for suspect_id in state['suspect_ids']:
             if suspect_id not in self.suspects:
@@ -550,9 +571,12 @@ class Session(object):
 
     # --------------------------------------------------------------- #
 
-    def export_file(self, session_filename=None):
+    def export_file(self, session_filename: str = None):
         """
-        Dump various session values to disk.
+        Dump the actual session state to disk.
+
+        Args:
+            session_filename: The path to save the session state, if None it will take it from self.session_filename
 
         @see: import_file()
         """
@@ -568,9 +592,12 @@ class Session(object):
         fh.write(zlib.compress(pickle.dumps(data, protocol=2)))
         fh.close()
 
-    def import_file(self, session_filename=None):
+    def import_file(self, session_filename: str = None):
         """
         Load various session values from disk.
+
+        Args:
+            session_filename: The path to load the session state, if None it will take it from self.session_filename
 
         @see: export_file()
         """
@@ -589,12 +616,12 @@ class Session(object):
 
     # --------------------------------------------------------------- #
 
-    def add_target(self, target):
+    def add_target(self, target: Target):
         """
         Add a target to the session. Multiple targets can be added for parallel fuzzing.
 
         Args:
-            target (Target): Target to add to session
+            target: Target to add to session
         """
         target.set_fuzz_data_logger(fuzz_data_logger=self.logger)
 
@@ -602,7 +629,7 @@ class Session(object):
         self.target = target
 
     @property
-    def num_mutations(self):
+    def num_mutations(self) -> int:
         """
         Number of total mutations in the graph. The logic of this routine is identical to that of fuzz(). See fuzz()
         for inline comments. The member variable self.total_num_mutations is updated appropriately by this routine.

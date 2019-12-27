@@ -18,4 +18,5 @@ class CmdRestarter(IRestarter):
 
     def restart(self, *args, **kwargs):
         subprocess.call(shlex.split(self.cmd))
+        return f"Executing command: {self.cmd}"
 

@@ -35,6 +35,9 @@ class TestCase(object):
         self.short_name = f'{self.request.name}.{self.request.mutant.name}.{self.request.mutant_index}'
         self.errors = []
 
+        self.request_name = self.request.name
+        self.mutant_name = self.request.mutant.name
+
     def add_error(self, error):
         """ Add an error to the current case """
         self.errors.append(error)
@@ -61,7 +64,7 @@ class TestCase(object):
             self.open_fuzzing_target(retry=retry)
 
             fuzzed_sent = False
-            for edge in self.path:  # Now we go through our path, sending each request
+            for idx, edge in enumerate(self.path, start=1):  # Now we go through our path, sending each request
                 request = edge.dst
                 callback = edge.callback
 
@@ -83,7 +86,7 @@ class TestCase(object):
                     callback_data = self._callback_current_node(node=request, edge=edge, original=True)
                     self.transmit(request, callback_data=callback_data, original=not fuzzed_sent)
 
-                if self.session.opts.new_connection_between_requests and len(self.path) > 1:  # Reopen connection
+                if self.session.opts.new_connection_between_requests and len(self.path) > idx:  # Reopen connection
                     try:
                         self.session.target.close()
                         self.open_fuzzing_target(retry=False)
@@ -98,6 +101,7 @@ class TestCase(object):
             return
         except exception.FuzzowskiTestCaseAborted as e:  # There was a transmission Error, we end the test case
             self.logger.log_info(f'Test case aborted due to transmission error: {str(e)}')
+            self.session.add_latest_test(self)
             return
 
     def test(self):
@@ -197,6 +201,10 @@ class TestCase(object):
                     except exception.FuzzowskiRuntimeError as e:                # Data received, Response do not match
                         self.logger.log_fail(str(e))                            # Abort TestCase
                         receive_failed = False
+                        raise exception.FuzzowskiTestCaseAborted(str(e))
+                    except Exception as e:  # Any other exception not controlled by the Restarter module
+                        self.logger.log_fail(str(e))
+                        self.session.is_paused = True # Pause the session if an uncontrolled error occurs
                         raise exception.FuzzowskiTestCaseAborted(str(e))
                 else:                                                           # Data received, no Responses defined
                     receive_failed = False
@@ -299,4 +307,8 @@ class TestCase(object):
 
     @property
     def disabled(self):
-        return self.request.disabled or self.request.mutant.disabled
+        try:
+            return self.request.disabled or self.request.mutant.disabled
+        except AttributeError:
+            return False
+

@@ -62,11 +62,11 @@ class SessionPrompt(CommandPrompt):
                 'exec': self._cmd_list_disabled_elements
             },
             'disable': {
-                'desc': 'Disable the actual fuzzing element',
+                'desc': 'Disable a fuzzing element',
                 'exec': self._cmd_disable
             },
             'enable': {
-                'desc': 'Disable the actual fuzzing element',
+                'desc': 'Enable a disabled element',
                 'exec': self._cmd_enable
             },
             'fuzz': {
