@@ -183,18 +183,22 @@ class Session(object):
         self.import_file(self.session_filename)
         self.prompt.start_prompt()
 
-    def run(self):
+    def run(self) -> bool:
         """
         Run the actual test case or the test case selected with the ID
         Args:
             test_case_id: The test case that will be run. if None the actual one will be used.
+
+        Returns: If the TestCase was run correctly (even with transmission errors) or not (due to Pausing without conn)
         """
         if self.test_case is not None:
-            self.test_case.run()
+            run = self.test_case.run()
             self.check_monitors()
             # self.process_errors()  # TODO: Move add suspects from different parts of the code to this function!
+            return run
         else:
             self.logger.log_info('Nothing to run yet.')
+            return False
 
     # --------------------------------------------------------------- #
 
@@ -232,21 +236,29 @@ class Session(object):
         Args:
             force: if True, the test case will be run even if it is disabled.
         """
+        run = True
         if self.test_case is not None:
             if force or not self.test_case.disabled:
-                self.run()
+                run = self.run()
 
-        self.next()
-        if self.test_case is None:  # All test cases exhausted
-            self.logger.log_info('Fuzzing test cases exhausted!')
-            self.is_paused = True
+        if run:
+            self.next()
+            if self.test_case is None:  # All test cases exhausted
+                self.logger.log_info('Fuzzing test cases exhausted!')
+                self.is_paused = True
 
     # --------------------------------------------------------------- #
 
     def reset(self):
+        """
+        Resets the Session state
+        """
         self._reset()
 
     def _reset(self):
+        """
+        Resets the Session state
+        """
         self.mutant_index = 0
         self.last_send = None
         self.last_recv = None
@@ -260,6 +272,12 @@ class Session(object):
     # --------------------------------------------------------------- #
 
     def test(self, test_case_id: int = None):
+        """
+        Sends the path of the actual test case, or the test identified by test_case_id if specified, without fuzzing
+
+        Args:
+            test_case_id: If specified it will test the TestCase with the ID specified
+        """
         try:
             mutant_index = self.mutant_index
             if test_case_id is None:
@@ -409,6 +427,16 @@ class Session(object):
     # =====================================================   ===========#
 
     def connect(self, src: Request, dst: Request = None, callback: callable = None):
+        """
+        Connects a request to the session as a root node, or two request between them. Optionally specifying a callback
+        in between requests.
+        It updates the number of total mutations
+
+        Args:
+            src: First request to connect
+            dst: Second Request to connect, if None it will connect the src Request as a root node in the session graph
+            callback: Optional, specify a callback that will be run in between requests and can change the data
+        """
         try:
             self.graph.connect(src, dst, callback)
         except exception.FuzzowskiRuntimeError:
@@ -424,6 +452,11 @@ class Session(object):
     # ================================================================#
 
     def add_suspect(self, test_case: TestCase):
+        """
+        Adds a TestCase as a suspect if it was not added previously
+        Args:
+            test_case: The test case to add as a suspect
+        """
         if test_case.id not in self.suspects:
             self.suspects[test_case.id] = test_case
             self.logger.log_info(f'Added test case {test_case.id} as a suspect')
@@ -450,6 +483,11 @@ class Session(object):
                         self.disable_by_path_name(f'{request_name}.{mutant_name}')
 
     def add_last_case_as_suspect(self, error: Exception):
+        """
+        Adds the latest test executed as a suspect
+        Args:
+            error: An Exception to include within the TestCase information
+        """
         if len(self.latest_tests) == 0 or self.previous_test_possible is False:
             return  # No latest case to add
         self.logger.log_warn("Adding latest test case as a suspect")
@@ -461,14 +499,30 @@ class Session(object):
     # --------------------------------------------------------------- #
 
     def disable_current_mutant(self, disable: bool = True):
+        """
+        Disable/enable the current mutant element
+        Args:
+            disable: (Def True). True to disable, False to enable
+        """
         if self.test_case is not None:
             self.test_case.request.mutant.disabled = disable
 
     def disable_current_request(self, disable: bool = True):
+        """
+        Disable/enable the current request
+        Args:
+            disable: (Def True). True to disable, False to enable
+        """
         if self.test_case is not None:
             self.test_case.request.disabled = disable
 
     def disable_by_path_name(self, path_name: str, disable: bool = True):
+        """
+        Disable/enable the element specified by path_name
+        Args:
+            path_name: it should be REQUEST_NAME to disable a request, or REQUEST_NAME.MUTANT_NAME for a mutant
+            disable: (Def True). True to disable, False to enable
+        """
         disabled_element = Request.get_mutant_by_path(path_name)
         disabled_element.disabled = disable
         if disable:  # Add to self.disabled_elements dictionary
@@ -481,7 +535,7 @@ class Session(object):
 
     def add_latest_test(self, test_case: TestCase):
         """ Add a test case to the list of latest test cases keeping the maximum number"""
-        self.logger.log_info(f"Adding {test_case.id} to latest cases")
+        # self.logger.log_info(f"Adding {test_case.id} to latest cases")
         self.previous_test_possible = True
         if len(self.latest_tests) == self.opts.tests_number_to_keep:
             self.latest_tests.pop() # Take latest test

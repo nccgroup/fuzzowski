@@ -29,7 +29,7 @@ def test_http_request():
     assert session.mutant_index == 1
     # session.test_case.print_requests()
     session.test()
-    assert session.test_case.request.variables['id'] is None
+    # assert session.test_case.request.variables['id'] is None
     session.run_next()
     assert session.mutant_index == 2
 

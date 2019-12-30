@@ -29,7 +29,7 @@ class TestCase(object):
 
         self.logger = session.logger
 
-        self.path_name = '->'\
+        self.path_name = '->' \
             .join([edge.dst.name if edge.dst != self.request else f'[{edge.dst.name}]' for edge in self.path])
         self.name = f'{self.path_name}.{self.request.mutant.name}.{self.request.mutant_index}'
         self.short_name = f'{self.request.name}.{self.request.mutant.name}.{self.request.mutant_index}'
@@ -42,13 +42,16 @@ class TestCase(object):
         """ Add an error to the current case """
         self.errors.append(error)
 
-    def run(self, fuzz: bool = True, retry: bool = True):
+    def run(self, fuzz: bool = True, retry: bool = True) -> bool:
         """
         Run the test case, transmitting the full path
 
         Args:
             fuzz:   (default True) Send the fuzzed node. If it is false, it transmit the original (for tests)
             retry:  (default True) Retry if connection fails
+
+        Returns: True if the TestCase was run and data was transmitted (even if transmission was cut)
+                 False if there was a connection issue and the target was paused, so the TestCase was not run
         """
         # First step is to open the target
         # TODO: Mechanism for not opening if want to keep an open connection between fuzzed packets
@@ -97,14 +100,16 @@ class TestCase(object):
 
             self.session.target.close()
             self.session.add_latest_test(self)
+            return True
         except exception.FuzzowskiPaused:
-            return
+            return False  # Returns False when the fuzzer got paused, as it did not run the TestCase
         except exception.FuzzowskiTestCaseAborted as e:  # There was a transmission Error, we end the test case
             self.logger.log_info(f'Test case aborted due to transmission error: {str(e)}')
             self.session.add_latest_test(self)
-            return
+            return True
 
     def test(self):
+        """Run a test case without fuzzing"""
         self.run(fuzz=False, retry=False)
 
     def open_fuzzing_target(self, retry: bool = True):
@@ -171,7 +176,7 @@ class TestCase(object):
             if not condition:
                 self.add_error(e)
                 self.session.add_suspect(self)
-            raise exception.FuzzowskiTestCaseAborted(str(e))   # Abort TestCase, Connection Reset
+            raise exception.FuzzowskiTestCaseAborted(str(e))  # Abort TestCase, Connection Reset
         except exception.FuzzowskiTargetConnectionAborted as e:
             msg = f"Target connection lost (socket error: {e.socket_errno} {e.socket_errmsg})"
             condition = self.session.opts.ignore_transmission_errors if original \
@@ -182,37 +187,40 @@ class TestCase(object):
                 self.logger.log_fail(msg)
                 self.add_error(e)
                 self.session.add_suspect(self)
-                raise exception.FuzzowskiTestCaseAborted(str(e)) # Abort TestCase, Connection Failed
+                raise exception.FuzzowskiTestCaseAborted(str(e))  # Abort TestCase, Connection Failed
 
         # 2. RECEIVE DATA
         if receive:
             try:
+                receive_failed = False
+                error = ''
                 self.last_recv = self.session.target.recv_all(DEFAULT_MAX_RECV)
-                if not self.last_recv:                                          # Nothing received, probably conn reset
+                if not self.last_recv:  # Nothing received, probably conn reset
                     receive_failed = True
                     error = "Nothing received. Connection Reset?"
-                    raise exception.FuzzowskiTestCaseAborted("Receive failed. Aborting Test Case")
-                elif len(request.responses) > 0:                                # Data received, Responses defined
+                    # raise exception.FuzzowskiTestCaseAborted("Receive failed. Aborting Test Case")
+                elif len(request.responses) > 0:  # Data received, Responses defined
                     try:
                         self.logger.log_check("Parsing response with data received")
                         response_str = request.parse_response(self.last_recv)
                         self.logger.log_info(response_str)
                         receive_failed = False
-                    except exception.FuzzowskiRuntimeError as e:                # Data received, Response do not match
-                        self.logger.log_fail(str(e))                            # Abort TestCase
+                    except exception.FuzzowskiRuntimeError as e:  # Data received, Response do not match
+                        self.logger.log_fail(str(e))  # Abort TestCase
                         receive_failed = False
                         raise exception.FuzzowskiTestCaseAborted(str(e))
                     except Exception as e:  # Any other exception not controlled by the Restarter module
                         self.logger.log_fail(str(e))
-                        self.session.is_paused = True # Pause the session if an uncontrolled error occurs
+                        self.session.is_paused = True  # Pause the session if an uncontrolled error occurs
                         raise exception.FuzzowskiTestCaseAborted(str(e))
-                else:                                                           # Data received, no Responses defined
+                else:  # Data received, no Responses defined
                     receive_failed = False
 
                 if self.session.opts.check_data_received_each_request:
+                    self.logger.log_check("Checking data received...")
                     if receive_failed:
                         # Assume a crash?
-                        self.logger.log_fail("Nothing received from target.")
+                        self.logger.log_fail(f"Nothing received from target. {error}")
                         self.session.add_suspect(self)
                         raise exception.FuzzowskiTestCaseAborted("Receive failed. Aborting Test Case")
 
@@ -263,14 +271,17 @@ class TestCase(object):
     # --------------------------------------------------------------- #
 
     def print_requests(self):
+        """Prints the Requests of this Test Case as python code"""
         helpers.print_python(self.path)
 
     def print_poc(self):
+        """Prints the Test Case as PoC code that can be run standalone"""
         # TODO: Take all options, send the whole test case instead of parameters
-        helpers.print_poc(self.session.target,  self.path,
+        helpers.print_poc(self.session.target, self.path,
                           self.session.opts.receive_data_after_each_request, self.session.opts.receive_data_after_fuzz)
 
     def get_poc(self):
+        """Gets the code of the PoC of this Test Case that can be run standalone"""
         exploit_code = helpers.get_exploit_code(self.session.target, self.path,
                                                 self.session.opts.receive_data_after_each_request,
                                                 self.session.opts.receive_data_after_fuzz)
@@ -285,8 +296,7 @@ class TestCase(object):
         """Returns information about the test case"""
         return f'Test Case {self.id} {"(Disabled)" if self.disabled else ""}\n' \
                f'  Path: {self.path_name}\n' \
-               f'  Mutant: {self.request.mutant.name}\n' \
-               f'  Mutant index: {self.request.mutant_index}\n' \
+               f'  Mutant: {self.mutant_name}\n' \
                f'  Errors: {self.errors}'
 
     def _callback_current_node(self, node, edge, original=False):
@@ -301,14 +311,15 @@ class TestCase(object):
         # if the edge has a callback, process it. the callback has the option to render the node, modify it and return.
         if edge.callback:
             self.logger.open_test_step('Callback function')
-            data = edge.callback(self.session.target, self.logger, session=self, node=node, edge=edge, original=original)
+            data = edge.callback(self.session.target, self.logger, session=self, node=node, edge=edge,
+                                 original=original)
 
         return data
 
     @property
     def disabled(self):
+        """Returns if the TestCase is disabled due to the actual request or actual mutant is disabled"""
         try:
             return self.request.disabled or self.request.mutant.disabled
         except AttributeError:
             return False
-

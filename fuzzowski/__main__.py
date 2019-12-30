@@ -334,14 +334,15 @@ class Fuzzowski(object):
         req_i = 1
         requests = []
         for fuzz_request in fuzz_requests:
-            request_name = 'Req_{}'.format(req_i)
+            request_name = 'request{}'.format(req_i)
             uni_request = fuzz_request.encode().decode('unicode_escape')
             s_initialize(request_name)
             for block_split in Fuzzowski.position_pattern.split(uni_request):
                 if Fuzzowski.base_value_pattern.match(block_split):
                     # Base Value inside, add String
                     base_value = Fuzzowski.base_value_pattern.match(block_split).groups()[0]
-                    s_string(base_value, name='{}_{}'.format(base_value, str_i))
+                    #s_string(base_value, name='{}_{}'.format(base_value, str_i))
+                    s_string(base_value)
                     str_i += 1
                 else:
                     # Other thing, add Static

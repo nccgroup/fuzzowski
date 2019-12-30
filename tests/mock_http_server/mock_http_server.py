@@ -16,7 +16,11 @@ class MockServerRequestHandler(BaseHTTPRequestHandler):
     tokens = []  # List of saved tokens
 
     def do_GET(self):
-        if self.path == '/token':
+        if len(self.path) > 1000:                               # 1. Mock a failure when path > 1000
+            # self.send_error(500, 'THE PATH')
+            print('Mocking error, stopping HTTP Server')
+            mock_server.shutdown()
+        elif self.path == '/token':
             # Gen token and save it
             token = str(uuid.uuid1())
             self.tokens.append(token)
@@ -53,7 +57,7 @@ class MockServerRequestHandler(BaseHTTPRequestHandler):
             body = self.rfile.read(content_length)
             print(body)
             if body.startswith(b'op='):  # lets check the op value
-                if len(body[3:]) > 4000:                        # 3. If it has more than 4K chars, send error message,
+                if len(body[3:]) > 2000:                        # 3. If it has more than 2K chars, send error message,
                                                                 #  then shutdown the server (simulating a crash)
                     print('Mocking error 2, Sending error 500')
                     self.send_error(500, 'ERROR 500')

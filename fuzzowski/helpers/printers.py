@@ -1,7 +1,10 @@
 import pygments
 from prompt_toolkit import print_formatted_text
-from pygments.lexers.python import PythonLexer
+from pygments.formatters.terminal256 import Terminal256Formatter
+from pygments.lexers.python import Python3Lexer
 from prompt_toolkit.formatted_text import PygmentsTokens
+from prompt_toolkit.styles.pygments import style_from_pygments_cls
+from pygments.styles import get_style_by_name
 
 from fuzzowski.mutants import Request, Mutant
 from fuzzowski.connections.target import Target
@@ -90,10 +93,10 @@ def path_to_python(path: list, indent=4) -> str:
 def print_python(path: list) -> None:
     tokens = []
     block_code = path_to_python(path)
+    print(pygments.highlight(block_code, Python3Lexer(), Terminal256Formatter(style='rrt')))
 
-    tokens.extend(list(pygments.lex(block_code, lexer=PythonLexer())))
-
-    print_formatted_text(PygmentsTokens(tokens))
+    # tokens.extend(list(pygments.lex(block_code, lexer=Python3Lexer())))
+    # print_formatted_text(PygmentsTokens(tokens))
 
 # --------------------------------------------------------------- #
 
@@ -132,9 +135,10 @@ def print_poc(target: Target, path: list,
     tokens = []
 
     exploit_code = get_exploit_code(target, path, receive_data_after_each_request, receive_data_after_fuzz)
-    tokens.extend(list(pygments.lex(exploit_code, lexer=PythonLexer())))
+    print(pygments.highlight(exploit_code, Python3Lexer(), Terminal256Formatter(style='rrt')))
 
-    print_formatted_text(PygmentsTokens(tokens))
+    # tokens.extend(list(pygments.lex(exploit_code, lexer=Python3Lexer())))
+    # print_formatted_text(PygmentsTokens(tokens))
 
 # --------------------------------------------------------------- #
 
@@ -145,15 +149,18 @@ def print_packets(path: list, nodes: dict) -> None:
         node = nodes[e.dst]
         p = node.render()
         line = '{} = {}'.format(node.name.replace('-', '_'), repr(p))
-        tokens.extend(list(pygments.lex(line, lexer=PythonLexer())))
+        tokens.extend(list(pygments.lex(line, lexer=Python3Lexer())))
 
     # p = self.fuzz_node.render()
     node = nodes[path[-1].dst]
     p = node.render()
     line = '{} = {}'.format(node.name.replace('-', '_'), repr(p))
-    tokens.extend(list(pygments.lex(line, lexer=PythonLexer())))
 
-    print_formatted_text(PygmentsTokens(tokens))
+    print(pygments.highlight(line, Python3Lexer(), Terminal256Formatter(style='rrt')))
+
+    # tokens.extend(list(pygments.lex(line, lexer=Python3Lexer())))
+    # style = style_from_pygments_cls(get_style_by_name('colorful'))
+    # print_formatted_text(PygmentsTokens(tokens), style=style)
 
 
 # --------------------------------------------------------------- #
