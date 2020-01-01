@@ -268,9 +268,14 @@ class Fuzzowski(object):
 
         self.restart_module = None
         if len(args.restart) > 0:
-            restart_module = [mod for mod in IRestarter.__subclasses__() if mod.name() == args.restart[0]][0]
-            restart_args = args.restart[1:]
-            self.restart_module = restart_module(*restart_args)
+            try:
+                restart_module = [mod for mod in IRestarter.__subclasses__() if mod.name() == args.restart[0]][0]
+                restart_args = args.restart[1:]
+                self.restart_module = restart_module(*restart_args)
+            except IndexError:
+                print(f"The restarter module {args.restart[0]} does not exist!")
+                exit(1)
+
 
         self.monitors = []
         if len(args.monitors) > 0:
@@ -345,9 +350,10 @@ class Fuzzowski(object):
                     s_string(base_value)
                     str_i += 1
                 else:
-                    # Other thing, add Static
-                    s_static(block_split)
-                    # TODO: Identify delimiters, bytes, ...
+                    # Other thing, add Static if len > 0
+                    if len(block_split) > 0:
+                        s_static(block_split)
+                        # TODO: Identify delimiters, bytes, ...
             requests.append(s_get(request_name))
             req_i += 1
 

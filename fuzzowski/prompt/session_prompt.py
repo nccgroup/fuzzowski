@@ -204,9 +204,9 @@ class SessionPrompt(CommandPrompt):
             print(f"[{' -> '.join([edge.dst.name for edge in path])}]")
             for edge in path:
                 mutants_list = edge.dst.list_fuzzable_mutants()
-                print(f'  {edge.dst.name} {"[DISABLED]" if edge.dst.disabled else ""}')
+                print(f'  {edge.dst.__class__.__name__}: {edge.dst.name}\t {"[DISABLED]" if edge.dst.disabled else ""}')
                 for mutant in mutants_list:
-                    print(f'    {edge.dst.name}.{mutant.name} {"[DISABLED]" if mutant.disabled else ""}')
+                    print(f'    {mutant.__class__.__name__}: {edge.dst.name}.{mutant.name}\t (Def Val: {mutant.original_value}) {"[DISABLED]" if mutant.disabled else ""}')
             print('')
 
     def _cmd_list_disabled_elements(self, tokens):
