@@ -7,10 +7,10 @@ from fuzzowski import Session
 class MODBUS(IFuzzer):
     """
     MODBUS Fuzzing Module
-    https://github.com/1modm
-    Use at your own risk, and please do not use in production environments.
-    
-    based on https://github.com/youngcraft/boofuzz-modbus
+    Use at your own risk, and please do not use in a production environment
+    @Author: https://github.com/1modm
+
+    Based on https://github.com/youngcraft/boofuzz-modbus
     and https://github.com/riptideio/pymodbus
 
     virtualenv venv -p python3
@@ -19,6 +19,7 @@ class MODBUS(IFuzzer):
 
     python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus -rt 0.5 -r read_coil
     python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus 
+    python -m fuzzowski 127.0.0.1 502 -p tcp -f modbus -rt 1 -m modbusMon
     """
 
     # --------------------------------------------------------------- #

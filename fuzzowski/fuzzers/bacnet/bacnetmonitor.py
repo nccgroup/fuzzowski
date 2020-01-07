@@ -1,11 +1,12 @@
 from fuzzowski.monitors.imonitor import IMonitor
 from fuzzowski.connections import ITargetConnection
 
-
 class BACnetMonitor(IMonitor):
     """
     BACnet Monitor Module interface
     @Author: https://github.com/1modm
+
+    Based on https://svn.nmap.org/nmap/scripts/bacnet-info.nse
     """
 
     get_bacnet_property_identifier_id = (b"\x81"  # Type: BACnet/IP (Annex J)
@@ -22,6 +23,7 @@ class BACnetMonitor(IMonitor):
                                    b"\x0c"  # Context-specific tag, number 0, Length Value Type 4
                                    b"\x02\x3f\xff\xff" # Object Type: device; instance number 4194303
                                    b"\x19\x4b" # Context-specific tag, number 1, Length Value Type 1
+                                   # TODO, send DeviceID
                                    )
 
     @staticmethod
@@ -30,7 +32,7 @@ class BACnetMonitor(IMonitor):
 
     @staticmethod
     def help():
-        return "Discovers and enumerates BACnet devices and collects device information based off standard requests"
+        return "Sends a query for Property Identifier id to the target in order to get the BACnet device information and check the response"
 
     def test(self):
         conn = self.get_connection_copy()
@@ -38,16 +40,24 @@ class BACnetMonitor(IMonitor):
         return result
 
     def _get_bacnet_info(self, conn: ITargetConnection):
-        conn.open()
-        conn.send(self.get_bacnet_property_identifier_id)
-        recv = conn.recv_all(10000)
-        if len(recv) == 0:
-            self.logger.log_error("BACnet error response, getting BACnet device information Failed!!")
+        try:
+            conn.open()
+            conn.send(self.get_bacnet_property_identifier_id)
+            data = conn.recv_all(10000)
+            if len(data) == 0:
+                self.logger.log_error("BACnet error response, getting BACnet device information Failed!!")
+                result = False
+            else:
+                # validate valid BACNet Packet and verify that the response APDU was not an error packet
+                if hex(data[0]) == '0x81' and hex(data[1]) == '0xa' and hex(data[6]) != '0x50':
+                  self.logger.log_info(f"Getting BACnet device information succeeded")
+                else:
+                  self.logger.log_warn(f"Getting BACnet error response in the APDU")
+                result = True
+        except Exception as e:
+            self.logger.log_error(f"BACnet error response, getting BACnet device information Failed!! Exception while receiving: {type(e).__name__}. {str(e)}")
             result = False
-        else:
-            self.logger.log_info(f"Getting BACnet device information succeeded")
-            result = True
+        finally:
+            conn.close()
 
-        conn.close()
         return result
-
