@@ -4,8 +4,9 @@ from fuzzowski import Session
 
 """
 BACnet Fuzzing Module example
-Use at your own risk, and please do not use in production environments.
+Use at your own risk, and please do not use in a production environment
 @Author: https://github.com/1modm
+
 Change your Device ID BACnet server below
 """
 
