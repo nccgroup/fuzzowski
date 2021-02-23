@@ -15,7 +15,7 @@ from fuzzowski.helpers import deprecated
 from . import exception
 from .constants import BIG_ENDIAN, LITTLE_ENDIAN
 from .loggers.fuzz_logger import FuzzLogger
-from .connections import ITargetConnection
+from .connections import IConnection
 from .exception import FuzzowskiRuntimeError, SizerNotUtilizedError, MustImplementException
 from .connections import SocketConnection, TelnetConnection
 from .connections.target import Target

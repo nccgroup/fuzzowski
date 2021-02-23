@@ -1,6 +1,6 @@
 from fuzzowski.fuzzers.ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
-from fuzzowski import ITargetConnection, IFuzzLogger, Session, Request, RegexResponse
+from fuzzowski import IConnection, IFuzzLogger, Session, Request, RegexResponse
 
 """
      Value               Operation Name
@@ -558,7 +558,7 @@ class IPP(IFuzzer):
     # --------------------------------------------------------------- #
 
     @staticmethod
-    def cb_set_jobid(target: ITargetConnection, logger: IFuzzLogger, session: Session, node: Request,
+    def cb_set_jobid(target: IConnection, logger: IFuzzLogger, session: Session, node: Request,
                      edge, original: bool, *args, **kwargs) -> bytes:
         """
         Callback used in send_uri that obtains the job-id and sets it in the send_uri node

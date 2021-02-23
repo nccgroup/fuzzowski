@@ -10,7 +10,7 @@ def test_http_request():
 
     target = Target(connection=SocketConnection('127.0.0.1',
                                                 31337,
-                                                proto='tcp',
+                                                protocol='tcp',
                                                 bind=None,
                                                 send_timeout=5.0,
                                                 recv_timeout=5.0

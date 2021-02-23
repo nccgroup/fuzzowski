@@ -11,7 +11,7 @@ import errno
 # from future.utils import raise_
 
 from .. import helpers
-from .itarget_connection import ITargetConnection
+from .iconnection import IConnection
 from .. import ip_constants
 from .. import exception
 
@@ -26,8 +26,8 @@ def _seconds_to_second_microsecond_struct(seconds):
     return struct.pack('ll', whole_seconds, whole_microseconds)
 
 
-class SocketConnection(ITargetConnection):
-    """ITargetConnection implementation using sockets.
+class SocketConnection(IConnection):
+    """IConnection implementation using sockets.
 
     Supports UDP, TCP, SSL, raw layer 2 and raw layer 3 packets.
 
@@ -47,7 +47,7 @@ class SocketConnection(ITargetConnection):
     Args:
         host (str): Hostname or IP address of target system, or network interface string if using raw-l2 or raw-l3.
         port (int): Port of target service. Required for proto values 'tcp', 'udp', 'ssl'.
-        proto (str): Communication protocol ("tcp", "udp", "ssl", "raw-l2", "raw-l3"). Default "tcp".
+        protocol (str): Communication protocol ("tcp", "udp", "ssl", "raw-l2", "raw-l3"). Default "tcp".
             raw-l2: Send packets at layer 2. Must include link layer header (e.g. Ethernet frame).
             raw-l3: Send packets at layer 3. Must include network protocol header (e.g. IPv4).
         bind (tuple (host, port)): Socket bind address and port. Required if using recv() with 'udp' protocol.
@@ -60,6 +60,7 @@ class SocketConnection(ITargetConnection):
         udp_broadcast (bool): Set to True to enable UDP broadcast. Must supply appropriate broadcast address for send() to
             work, and '' for bind host for recv() to work.
     """
+
     _PROTOCOLS = ["tcp", "ssl", "udp", "raw-l2", "raw-l3"]
     _PROTOCOLS_PORT_REQUIRED = ["tcp", "ssl", "udp"]
     MAX_PAYLOADS = {"raw-l2": 1514,
@@ -69,12 +70,12 @@ class SocketConnection(ITargetConnection):
                     }
 
     def __init__(self,
-                 host,
-                 port=None,
-                 proto="tcp",
-                 bind=None,
-                 send_timeout=5.0,
-                 recv_timeout=5.0,
+                 host: str,
+                 port: int,
+                 protocol: str = "tcp",
+                 bind: int = None,
+                 send_timeout: float = 5.0,
+                 recv_timeout: float = 5.0,
                  ethernet_proto=ETH_P_IP,
                  l2_dst='\xFF' * 6,
                  udp_broadcast=False):
@@ -85,18 +86,28 @@ class SocketConnection(ITargetConnection):
         self.bind = bind
         self._recv_timeout = recv_timeout
         self._send_timeout = send_timeout
-        self.proto = proto.lower()
+        self.proto = protocol.lower()
         self.ethernet_proto = ethernet_proto
         self.l2_dst = l2_dst
         self._udp_broadcast = udp_broadcast
 
+        self._server_sock = None  # Socket for server-side connections
         self._sock = None
+        self._open = False
 
         if self.proto not in self._PROTOCOLS:
             raise exception.FuzzowskiRuntimeError("INVALID PROTOCOL SPECIFIED: %s" % self.proto)
 
         if self.proto in self._PROTOCOLS_PORT_REQUIRED and self.port is None:
             raise ValueError("__init__() argument port required for protocol {0}".format(self.proto))
+
+    @staticmethod
+    def name() -> str:
+        return "socket"
+
+    @staticmethod
+    def help() -> str:
+        return "Socket connection"
 
     def close(self):
         """
@@ -106,6 +117,7 @@ class SocketConnection(ITargetConnection):
             None
         """
         self._sock.close()
+        self._sock = None
 
     def open(self):
         """
@@ -120,7 +132,7 @@ class SocketConnection(ITargetConnection):
         elif self.proto == "udp":
             self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             if self.bind:
-                self._sock.bind(('0.0.0.0', self.bind))
+                self._sock.bind((self.host, self.bind))
             if self._udp_broadcast:
                 self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
         elif self.proto == "raw-l2":
@@ -157,6 +169,44 @@ class SocketConnection(ITargetConnection):
             # TODO: Python3 change, maybe should use a context instead of deprecated ssl.wrap_socket?
             self._sock = ssl_sock
             # self._sock = httplib.FakeSocket(self._sock, ssl_sock)
+
+    def accept(self):  # TODO: Not thoroughly tested
+        if self._server_sock is None:  # Create server socket
+            self._open_server()
+
+        # if self._sock is None:
+        # Accept new connection
+        self._sock, addr = self._server_sock.accept()
+        self._sock.settimeout(self._recv_timeout)
+
+        return addr
+
+    def _open_server(self):
+        """
+        Creates and bind a server socket to start accepting connections
+        Returns:
+
+        """
+        if self.proto == "tcp" or self.proto == "ssl":
+            self._server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        elif self.proto == "udp":
+            self._server_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        elif self.proto == "raw-l2":
+            self._server_sock = socket.socket(socket.AF_PACKET, socket.SOCK_RAW)
+        elif self.proto == "raw-l3":
+            self._server_sock = socket.socket(socket.AF_PACKET, socket.SOCK_DGRAM)
+        else:
+            raise exception.FuzzowskiRuntimeError("INVALID PROTOCOL SPECIFIED: %s" % self.proto)
+
+        # Bind socket to host and port
+        self._server_sock.bind((self.host, self.port))
+
+        if self._udp_broadcast:
+            self._server_sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+
+        # Start listening
+        self._server_sock.listen()
 
     def recv(self, max_bytes):
         """
@@ -271,7 +321,7 @@ class SocketConnection(ITargetConnection):
     def __deepcopy__(self, memo):
         new_socket = SocketConnection(self.host,
                                       port=self.port,
-                                      proto=self.proto,
+                                      protocol=self.proto,
                                       bind=self.bind,
                                       send_timeout=self._send_timeout,
                                       recv_timeout=self._recv_timeout,
@@ -279,6 +329,7 @@ class SocketConnection(ITargetConnection):
                                       l2_dst=self.l2_dst,
                                       udp_broadcast=self._udp_broadcast)
         return new_socket
+
 
 
 

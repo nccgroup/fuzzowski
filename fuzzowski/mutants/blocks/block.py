@@ -46,6 +46,9 @@ class Block(Mutant):
         for item in self.stack:
             original_value += item.original_value
 
+        if self.encoder:
+            original_value = self.encoder(original_value)
+
         return original_value
 
     def mutation_generator(self, mutant_index=0) -> Generator[bytes, None, None]:

@@ -175,6 +175,7 @@ class TestCase(object):
                 else self.session.opts.ignore_connection_issues_after_fuzz
             if not condition:
                 self.add_error(e)
+                print(f'original: {original}, condition= {condition}')
                 self.session.add_suspect(self)
             raise exception.FuzzowskiTestCaseAborted(str(e))  # Abort TestCase, Connection Reset
         except exception.FuzzowskiTargetConnectionAborted as e:
@@ -194,7 +195,10 @@ class TestCase(object):
             try:
                 receive_failed = False
                 error = ''
-                self.last_recv = self.session.target.recv_all(DEFAULT_MAX_RECV)
+
+                # Receive data depending on the request receive strategy
+                self.last_recv = self.session.target.recv_by_strategy(request, self.session)
+
                 if not self.last_recv:  # Nothing received, probably conn reset
                     receive_failed = True
                     error = "Nothing received. Connection Reset?"
@@ -310,7 +314,7 @@ class TestCase(object):
 
         # if the edge has a callback, process it. the callback has the option to render the node, modify it and return.
         if edge.callback:
-            self.logger.open_test_step('Callback function')
+            self.logger.open_test_step(f'Callback function: {edge.callback.__name__}')
             data = edge.callback(self.session.target, self.logger, session=self, node=node, edge=edge,
                                  original=original)
 

@@ -12,13 +12,15 @@ class Request(Block):
     _mutant_name = Mutant.name_re.pattern.strip("^$")
     _path_name_re = re.compile(f'^(?P<request>{_mutant_name})(?:[.](?P<mutant>{_mutant_name}))?$')
 
-    def __init__(self, name):
+    def __init__(self, name: str, receive_strategy: str or callable = 'RECV_ALL'):
         """
         Top level container instantiated by s_initialize(). Can hold any block structure or primitive.
         It is basically a Block, with some special arguments and functions, but behaves exactly like a block
 
         Args:
             name: Name of the Request
+            receive_strategy (optional): 'RECV', 'RECV_ALL' or
+              a function with defined as follow: receiver(target: Target, session: Session, request: Request) -> bytes
         """
         super().__init__(name, self)  # A Request is a Block without a Request parent!
         self.id = None
@@ -31,6 +33,7 @@ class Request(Block):
         # self.variables: Mapping[str, int] = dict()
         self.variables = blocks.VARIABLES
         self.responses = []
+        self.receive_strategy = receive_strategy
 
     def push(self, item: Mutant):
         """

@@ -12,6 +12,8 @@ from fuzzowski.graph import Graph, Edge
 from fuzzowski.mutants.blocks import Request
 from fuzzowski.mutants import Mutant
 from typing import List, Generator, Dict
+
+from .server_testcase import ServerTestCase
 from .testcase import TestCase
 from fuzzowski.prompt.session_prompt import SessionPrompt
 
@@ -21,6 +23,7 @@ class SessionOptions(object):
     This is a dumb, auxiliary class to save all session options
     """
     def __init__(self, *args, **kwargs):
+        self.server_session = None
         self.crash_threshold_element = None
         self.crash_threshold_request = None
         self.restart_interval = None
@@ -81,7 +84,8 @@ class Session(object):
                  monitors: "list of IMonitor" = [],
                  new_connection_between_requests: bool = False,
                  transmit_full_path: bool = False,
-                 tests_number_to_keep: int = 1000
+                 tests_number_to_keep: int = 1000,
+                 server_session: bool = False,
                  ):
         super().__init__()
 
@@ -103,7 +107,8 @@ class Session(object):
                                    ignore_transmission_errors=ignore_transmission_errors,  # TODO
                                    ignore_connection_issues_after_fuzz=ignore_connection_issues_after_fuzz,  # TODO
 
-                                   tests_number_to_keep=tests_number_to_keep
+                                   tests_number_to_keep=tests_number_to_keep,
+                                   server_session=server_session
                                    )
 
         # Create Results Dir if it does not exist
@@ -121,7 +126,7 @@ class Session(object):
         else:
             self.session_filename = None
 
-        self.logger = FuzzLogger(fuzz_loggers)
+        self.logger: FuzzLogger = FuzzLogger(fuzz_loggers)
 
         if self.session_filename is not None:
             self.logger.log_info('Using session file: {}'.format(self.session_filename))
@@ -419,7 +424,10 @@ class Session(object):
         """
         for _ in request:
             self.mutant_index += 1
-            self.test_case = TestCase(id=self.mutant_index, session=self, request=request, path=path)
+            if not self.opts.server_session:
+                self.test_case = TestCase(id=self.mutant_index, session=self, request=request, path=path)
+            else:
+                self.test_case = ServerTestCase(id=self.mutant_index, session=self, request=request, path=path)
             yield self.test_case
 
     # ================================================================#

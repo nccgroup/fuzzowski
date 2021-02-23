@@ -436,12 +436,12 @@ def repr_input_bytes(input_bytes):
     b = b''
     hexb = ''
     for c, i in result:
-        if i > 10:
-            b += '[{}*{}] '.format(chr(c), i).encode()
-            hexb += '[{:02x}*{}] '.format(c, i)
+        if i > 1000:
+            b += ' [{}*{}] '.format(chr(c), i).encode()
+            hexb += ' [{:02x}*{}] '.format(c, i)
         else:
             b += bytes([c]*i)
-            hexb += '{:02x} '.format(c)
+            hexb += ' {:02x} '.format(c)
 
     return repr(b)
     # return hexb + '- ' + repr(b)

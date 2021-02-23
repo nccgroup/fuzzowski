@@ -9,7 +9,7 @@ import telnetlib
 # from future.utils import raise_
 
 from .. import helpers
-from .itarget_connection import ITargetConnection
+from .iconnection import IConnection
 from .. import ip_constants
 from .. import exception
 
@@ -24,8 +24,8 @@ def _seconds_to_second_microsecond_struct(seconds):
     return struct.pack('ll', whole_seconds, whole_microseconds)
 
 
-class TelnetConnection(ITargetConnection):
-    """ITargetConnection implementation using Telnet.
+class TelnetConnection(IConnection):
+    """IConnection implementation using Telnet.
 
     """
 
@@ -34,7 +34,8 @@ class TelnetConnection(ITargetConnection):
                  port=23,
                  timeout=5.0,
                  username=b'USERNAME',
-                 password=b'PASSWORD'  # TODO: POSITIONAL ARGS
+                 password=b'PASSWORD',  # TODO: POSITIONAL ARGS
+                 read_until=b'>'
                  ):
 
         self.host = host
@@ -42,11 +43,20 @@ class TelnetConnection(ITargetConnection):
         self.timeout = timeout
         self.username = username
         self.password = password
+        self.read_until = read_until
 
         self._active_session = False
 
         self._client = None
         self._counter = 0
+
+    @staticmethod
+    def name() -> str:
+        return "Telnet"
+
+    @staticmethod
+    def help() -> str:
+        return "Telnet connection"
 
     def close(self):
         """
@@ -79,7 +89,7 @@ class TelnetConnection(ITargetConnection):
                 self._client.write(self.username + b'\r\n')
                 self._client.read_until(b'User password:')
                 self._client.write(self.password + b'\r\n')
-                m = self._client.read_until(b'>')  # Todo: Implementation dependant
+                m = self._client.read_until(self.read_until)
                 self._active_session = True
 
         except socket.error as e:
@@ -147,7 +157,7 @@ class TelnetConnection(ITargetConnection):
             int: Number of bytes actually sent.
         """
         # try:
-        #     data = data[:self.MAX_PAYLOADS[self.proto]]
+        #     data = data[:self.MAX_PAYLOADS[self.protocol]]
         # except KeyError:
         #     pass  # data = data
 

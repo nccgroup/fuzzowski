@@ -1,7 +1,7 @@
 import abc
 from fuzzowski import Session
 from copy import deepcopy
-from ..connections import ITargetConnection
+from ..connections import IConnection
 from ..testcase import TestCase
 
 
@@ -16,7 +16,7 @@ class IMonitor(metaclass=abc.ABCMeta):
         self.session = session
         self.logger = self.session.logger # We save the logger to call it easier
 
-    def get_connection_copy(self) -> ITargetConnection:
+    def get_connection_copy(self) -> IConnection:
         """
         Helper. Copy the connection to the target and returns it
         Returns:

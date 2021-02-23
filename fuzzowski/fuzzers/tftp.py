@@ -2,7 +2,6 @@ from .ifuzzer import IFuzzer
 from fuzzowski import Session
 from fuzzowski.mutants.spike import *
 
-
 class TFTP(IFuzzer):
     """TFTP Fuzzer
 

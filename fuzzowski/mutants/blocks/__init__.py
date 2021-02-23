@@ -6,6 +6,8 @@ from .request import Request
 from .size import Size
 from .repeat import Repeat
 from .variable import Variable
+from .wrap import Wrap
+from .callable import Callable
 
 # __all__ = [Block, Request, Size, Checksum, Repeat, Variable]
 

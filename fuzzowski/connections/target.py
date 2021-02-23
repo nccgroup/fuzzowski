@@ -1,11 +1,17 @@
+import traceback
+from typing import TYPE_CHECKING
+
 from ..ip_constants import DEFAULT_MAX_RECV
-from ..loggers import FuzzLoggerText
-from copy import deepcopy
+from fuzzowski import exception
+
+if TYPE_CHECKING:
+    from .. import Session, Request
+
 
 class Target(object):
     """Target descriptor container.
 
-    Takes an ITargetConnection and wraps send/recv with appropriate
+    Takes an IConnection and wraps send/recv with appropriate
     FuzzDataLogger calls.
 
     Contains a logger which is configured by Session.add_target().
@@ -14,7 +20,7 @@ class Target(object):
         tcp_target = Target(SocketConnection(host='127.0.0.1', port=17971))
 
     Args:
-        connection (itarget_connection.ITargetConnection): Connection to system under test.
+        connection (itarget_connection.IConnection): Connection to system under test.
     """
 
     def __init__(self, connection, procmon=None, procmon_options=None, netmon=None):
@@ -52,7 +58,17 @@ class Target(object):
         self._target_connection.open()
         self._fuzz_data_logger.log_info('Connection opened.')
 
-    def recv(self, max_bytes=DEFAULT_MAX_RECV):
+    def accept(self):
+        """
+        Accepts a new connection
+
+        Returns: None
+        """
+        self._fuzz_data_logger.log_info(f'Waiting for remote connection')
+        conn = self._target_connection.accept()
+        self._fuzz_data_logger.log_info(f'Connection received from {conn[0]}:{conn[1]}')
+
+    def recv(self, max_bytes=DEFAULT_MAX_RECV) -> bytes:
         """
         Receive up to max_bytes data from the target.
 
@@ -72,7 +88,7 @@ class Target(object):
 
         return data
 
-    def recv_all(self, max_bytes=DEFAULT_MAX_RECV):
+    def recv_all(self, max_bytes=DEFAULT_MAX_RECV) -> bytes:
         """
         Receive up to max_bytes data from the target. Trying to receive everything
 
@@ -130,6 +146,25 @@ class Target(object):
     @property
     def target_connection(self):
         return self._target_connection
+
+    def recv_by_strategy(self, request: 'Request', session: 'Session') -> bytes:
+        if request.receive_strategy == 'RECV':
+            return self.recv(DEFAULT_MAX_RECV)
+        elif request.receive_strategy == 'RECV_ALL':
+            return self.recv_all(DEFAULT_MAX_RECV)
+        elif callable(request.receive_strategy):
+            # Calls to the callable defined with the following format:
+            # receiver(target: Target, session: Session, request: Request) -> bytes
+            try:
+                return request.receive_strategy(self, session, request)
+            except exception.FuzzowskiConnectionError:
+                raise
+            except Exception as e:
+                session.logger.log_warn(f'Custom receiver {request.receive_strategy} gave an exception! '
+                                        f'{traceback.format_exc()}')
+                return b''
+        else:
+            raise exception.FuzzowskiRuntimeError('Wrong Receive Strategy')
 
 
 

@@ -18,6 +18,7 @@ import os
 import re
 import hashlib
 import sys
+import inspect
 
 from fuzzowski import *
 from fuzzowski.fuzzers import IFuzzer
@@ -62,7 +63,7 @@ class Fuzzowski(object):
         else:
             self.target = Target(connection=SocketConnection(self.args.host,
                                                              self.args.port,
-                                                             proto=self.args.protocol,
+                                                             protocol=self.args.protocol,
                                                              bind=self.args.bind,
                                                              send_timeout=self.args.send_timeout,
                                                              recv_timeout=self.args.recv_timeout
@@ -84,7 +85,8 @@ class Fuzzowski(object):
                                restarter=self.restart_module,
                                monitors=self.monitors,
                                new_connection_between_requests=self.args.new_connection_between_requests,
-                               transmit_full_path=self.args.transmit_full_path
+                               transmit_full_path=self.args.transmit_full_path,
+                               server_session=self.args.server_session
                                )
 
         # Connect nodes of graph
@@ -110,6 +112,103 @@ class Fuzzowski(object):
     # --------------------------------------------------------------- #
 
     def _init_argparser(self):
+        """
+        Initializes the argparser inside self.parser
+        """
+
+        # This parser0 is a little parser to be able to append fuzzer modules with include before
+        parser0 = argparse.ArgumentParser(usage=argparse.SUPPRESS, add_help=False)
+        parser0.add_argument('-i', dest="include", nargs='+', help="Include modules from path[s]")
+        args0, others = parser0.parse_known_args()
+        if args0.include is not None:
+            for path in args0.include:
+                self.import_modules_from_path(path)
+
+        self.parser = argparse.ArgumentParser(
+            description= logo ,
+            formatter_class=argparse.RawTextHelpFormatter)
+
+        subparsers_list = self.get_connection_arguments(self.parser)
+        for subparser in subparsers_list:
+            conn_grp = subparser.add_argument_group('Connection Options')
+            conn_grp.add_argument("--sleep-time", dest="sleep_time", type=float, default=0.0,
+                                  help="Sleep time between each test (Default 0)")
+            conn_grp.add_argument('-nc', '--new-conns', dest='new_connection_between_requests',
+                                  help="Open a new connection after each packet of the same test",
+                                  action='store_true')
+            conn_grp.add_argument('-tn', '--transmit_full_path', dest='transmit_full_path',
+                                  help="Transmit the next node in the graph of the fuzzed node",
+                                  action='store_true')
+            conn_grp.add_argument('-s', '--server', dest='server_session',
+                                  help="Act as a server, instead of as a client (for Fuzzing clients)",
+                                  action='store_true')
+            recv_grp = subparser.add_argument_group('RECV() Options')
+            recv_grp.add_argument('-nr', '--no-recv', dest='receive_data_after_each_request',
+                                  help="Do not recv() in the socket after each send",
+                                  action='store_false')
+            recv_grp.add_argument('-nrf', '--no-recv-fuzz', dest='receive_data_after_fuzz',
+                                  help="Do not recv() in the socket after sending a fuzzed request",
+                                  action='store_false')
+            recv_grp.add_argument('-cr', '--check-recv', dest='check_data_received_each_request',
+                                  help="Check that data has been received in recv()",
+                                  action='store_true')
+
+            crash_grp = subparser.add_argument_group('Crashes Options')
+            crash_grp.add_argument("--threshold-request", dest="crash_threshold_request", type=int, default=9999,
+                                   help="Set the number of allowed crashes in a Request before skipping it (Default 9999)")
+            crash_grp.add_argument("--threshold-element", dest="crash_threshold_element", type=int, default=3,
+                                   help="Set the number of allowed crashes in a Primitive before skipping it (Default 3)")
+            crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_after_fuzz',
+                                   help="Log as error when there is any connection issue in the fuzzed node",
+                                   action='store_false')
+
+            fuzz_grp = subparser.add_argument_group('Fuzz Options')
+            fuzz_grp_opts = fuzz_grp.add_mutually_exclusive_group()
+            fuzz_grp_opts.add_argument('-c', '--callback', dest='callback',
+                                       default=None,
+                                       help="Set a callback address to fuzz with callback generator instead of normal mutations")
+            fuzz_grp_opts.add_argument('--file', dest='filename', help='Use contents of a file for fuzz mutations')
+
+            fuzzers = [fuzzer_class.name for fuzzer_class in IFuzzer.__subclasses__()] + ['raw']
+            protocols_help = 'Requests of the protocol to fuzz, default All\n'
+            for fuzzer_protocol in IFuzzer.__subclasses__():
+                methods = ', '.join([req.__name__ for req in fuzzer_protocol.get_requests()])
+                protocols_help += '  {}: [{}]\n'.format(fuzzer_protocol.name, methods)
+            protocols_help += '  {}: [{}]'.format('raw', repr("'\x01string\n' '\x02request2\x00' ...").strip('"'))
+            fuzzers_grp = subparser.add_argument_group('Fuzzers')
+            fuzzers_grp.add_argument('-i', dest="include", nargs='+', help="Include modules from path[s]",
+                                     metavar="PATH")
+            fuzzers_grp.add_argument("-f", "--fuzz", dest="fuzz_protocol", help='Available Protocols', required=True,
+                                     choices=fuzzers)
+            fuzzers_grp.add_argument("-r", "--requests", dest="fuzz_requests", nargs='+', default=[],
+                                     help=protocols_help, required=False)
+
+            restarters_grp = subparser.add_argument_group('Restart options')
+            restarters_help = 'Restarter Modules:\n'
+            for restarter in IRestarter.__subclasses__():
+                restarters_help += '  {}: {}\n'.format(restarter.name(), restarter.help())
+            restarters_grp.add_argument('--restart', nargs='+', default=[], metavar=('module_name', 'args'),
+                                        help=restarters_help)
+            restarters_grp.add_argument("--restart-sleep", dest="restart_sleep_time", type=int, default=5,
+                                        help='Set sleep seconds after a crash before continue (Default 5)')
+
+            monitor_classes = [monitor_class for monitor_class in IMonitor.__subclasses__() if
+                               monitor_class != IThreadMonitor]
+            monitor_names = [monitor.name() for monitor in monitor_classes]
+            monitors_grp = subparser.add_argument_group('Monitor options')
+            monitors_help = 'Monitor Modules:\n'
+            for monitor in monitor_classes:
+                monitors_help += '  {}: {}\n'.format(monitor.name(), monitor.help())
+            monitors_grp.add_argument('--monitors', '-m', nargs='+', default=[],
+                                      help=monitors_help, choices=monitor_names)
+
+            other_grp = subparser.add_argument_group('Other Options')
+            other_grp.add_argument("--path", dest="path", default='/',
+                                   help='Set path when fuzzing HTTP based protocols (Default /)')
+            other_grp.add_argument("--document_url", dest="document_url", default='http://127.0.0.1/',
+                                   help='Set Document URL for print_uri')
+
+    def _init_argparser_old(self):
         """
         Initializes the argparser inside self.parser
         """
@@ -160,6 +259,9 @@ class Fuzzowski(object):
                                help="Set the number of allowed crashes in a Request before skipping it (Default 9999)")
         crash_grp.add_argument("--threshold-element", dest="crash_threshold_element", type=int, default=3,
                                help="Set the number of allowed crashes in a Primitive before skipping it (Default 3)")
+        crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_after_fuzz',
+                               help="Log as error when there is any connection issue in the fuzzed node",
+                               action='store_true')
         crash_grp.add_argument('--error-fuzz-issues', dest='ignore_connection_issues_after_fuzz',
                                help="Log as error when there is any connection issue in the fuzzed node",
                                action='store_true')
@@ -381,6 +483,31 @@ class Fuzzowski(object):
         else:
             print(f'The path {path} is not valid')
             exit(1)
+
+    @staticmethod
+    def get_connection_arguments(argparser) -> list:
+        subparsers = argparser.add_subparsers(title="Connections")
+        subparsers_list = []
+        for conn_class in IConnection.__subclasses__():
+            conn_parser = subparsers.add_parser(conn_class.name(), help=conn_class.help())
+            subparsers_list.append(conn_parser)
+            signature = inspect.signature(conn_class.__init__)
+            for param in signature.parameters.values():
+                if param.name == 'self':
+                    continue
+                # Get argument type from annotation if placed (default str)
+                arg_type = str
+                if param.annotation != signature.empty:
+                    # print(param.name, param.annotation)
+                    # arg_type = getattr(__builtins__, param.annotation)
+                    arg_type = param.annotation
+
+                # Add argument as positional or optional (prepended with - )
+                arg_name = param.name if param.default == signature.empty else f'-{param.name}'
+                # print(f'Adding {arg_name} to {conn_class.name()}')
+                conn_parser.add_argument(arg_name, type=arg_type, default=param.default)
+                # TODO: Add help to argument from docstring! conn_class.__init__.__doc__
+        return subparsers_list
 
 # --------------------------------------------------------------- #
 

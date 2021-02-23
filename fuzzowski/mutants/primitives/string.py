@@ -8,7 +8,7 @@ from ...exception import FuzzowskiRuntimeError
 
 
 class String(Mutant):
-    default_mutation_types = ('instance', 'callback', 'file', 'long', 'commands', 'format', 'misc')
+    default_mutation_types = ('instance', 'callback', 'file', 'long', 'commands', 'format', 'misc', 'json')
     # store generic mutations as a class variable to avoid copying the structure across each instantiated primitive.
     _generic_long_mutations = []  # It will be filled in _init_ if it is empty
 
@@ -138,6 +138,58 @@ class String(Mutant):
         # miscellaneous.
         "\r\n" * 100,
         "<>" * 500  # sendmail crackaddr (http://lsd-pl.net/other/sendmail.txt)
+    ]
+
+    # Taken from AFL
+    _generic_json_mutations = [
+        "0",
+        ",0",
+        ":0",
+        "0:",
+        "-1.2e+3",
+        "true",
+        "false",
+        "null",
+        "\"\"",
+        ",\"\"",
+        ":\"\"",
+        "\"\":",
+        "{}",
+        ",{}",
+        ":{}",
+        "{\"\":0}",
+        "{{}}",
+        "[]",
+        ",[]",
+        ":[]",
+        "[0]",
+        "[[]]",
+        "''",
+        "\\",
+        "\\b",
+        "\\f",
+        "\\n",
+        "\\r",
+        "\\t",
+        "\\u0000",
+        "\\x00",
+        "\\0",
+        "\\uD800\\uDC00",
+        "\\uDBFF\\uDFFF",
+        "\"\":0",
+        "//",
+        "/**/",
+        # Things like geojson, json-ld, ...
+        "$ref",
+        "type",
+        "coordinates",
+        "@context",
+        "@id",
+        "@type",
+        # Strings with truncated special values
+        "{\"foo\":fa",
+        "{\"foo\":t",
+        "{\"foo\":nul",
     ]
 
     _generic_callback_payloads = [
@@ -444,6 +496,8 @@ class String(Mutant):
             all_mutations.append(self._generic_format_mutations)
         if 'misc' in self._mutation_types:
             all_mutations.append(self._generic_misc_mutations)
+        if 'json' in self._mutation_types:
+            all_mutations.append(self._generic_json_mutations)
         return list(itertools.chain(*all_mutations))   # This will copy the lists... :(
 
     def _render(self, value) -> bytes:

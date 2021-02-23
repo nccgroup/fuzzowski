@@ -1,6 +1,6 @@
 from fuzzowski.monitors.imonitor import IMonitor
 from fuzzowski import Session
-from fuzzowski.connections import ITargetConnection
+from fuzzowski.connections import IConnection
 
 class IPPMon(IMonitor):
     get_printer_attribs_headers = ("POST {} HTTP/1.1\r\n"
@@ -61,7 +61,7 @@ class IPPMon(IMonitor):
         result = self._get_ipp_attribs(conn)
         return result
 
-    def _get_ipp_attribs(self, conn: ITargetConnection):
+    def _get_ipp_attribs(self, conn: IConnection):
         try:
             conn.open()
             headers = self.get_printer_attribs_headers.format(self.path, conn.info).encode()

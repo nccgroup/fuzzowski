@@ -1,6 +1,6 @@
 from fuzzowski.fuzzers.ifuzzer import IFuzzer
 from fuzzowski.mutants.spike import *
-from fuzzowski import ITargetConnection, IFuzzLogger, Session, Request, RegexResponse, HTTPJsonResponse
+from fuzzowski import IConnection, IFuzzLogger, Session, Request, RegexResponse, HTTPJsonResponse
 
 
 class MockHTTPFuzzer(IFuzzer):

@@ -1,5 +1,5 @@
 from fuzzowski.monitors.imonitor import IMonitor
-from fuzzowski.connections import ITargetConnection
+from fuzzowski.connections import IConnection
 
 
 class BACnetMonitor(IMonitor):
@@ -37,7 +37,7 @@ class BACnetMonitor(IMonitor):
         result = self._get_bacnet_info(conn)
         return result
 
-    def _get_bacnet_info(self, conn: ITargetConnection):
+    def _get_bacnet_info(self, conn: IConnection):
         conn.open()
         conn.send(self.get_bacnet_property_identifier_id)
         recv = conn.recv_all(10000)

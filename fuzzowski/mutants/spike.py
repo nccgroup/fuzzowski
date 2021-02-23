@@ -1,7 +1,7 @@
 """
 This file contains the typical SPIKE functions to create our Fuzzers.
 """
-from typing import Iterable, List, Tuple, Union, TypeVar
+from typing import Iterable, List, Tuple, Union, TypeVar, Optional
 
 from .mutant import Mutant
 from ..exception import FuzzowskiRuntimeError
@@ -76,18 +76,21 @@ def s_switch(name: str):
 # --------------------------------------------------------------- #
 
 
-def s_initialize(name: str):
+def s_initialize(name: str, receive_strategy: str or callable = 'RECV_ALL'):
     """
     Initialize a new block request. All blocks / primitives generated after this call apply to the named request.
     Use s_switch() to jump between factories.
 
     Args:
         name: Name of request
+        receive_strategy (optional):
+            'RECV', 'RECV_ALL' or a function with the following arguments
+            (target: Target, session: Session, request: Request) -> bytes
     """
     if name in blocks.REQUESTS:
         raise FuzzowskiRuntimeError("blocks.REQUESTS ALREADY EXISTS: %s" % name)
 
-    blocks.REQUESTS[name] = blocks.Request(name)
+    blocks.REQUESTS[name] = blocks.Request(name, receive_strategy=receive_strategy)
     blocks.CURRENT = blocks.REQUESTS[name]
 
 # --------------------------------------------------------------- #
@@ -212,6 +215,27 @@ def s_checksum(block_name: str, algorithm: Union[str, callable] = "crc32", outpu
 # --------------------------------------------------------------- #
 
 
+def s_callable(value: bytes, function: callable, var_args: Optional[List[str]] = None, fuzzable: bool = False, name: str = None, *args, **kwargs):
+    """
+    Block that calculates the value with a function passed as argument
+
+    Args:
+        value:      Default value to calculate lengths
+        function:   function to be executed
+        var_args:   list of variables to be obtained and passed to the function as kwargs
+        fuzzable:   (Optional, def=False) Enable/disable fuzzing of this primitive
+        name:       Name of the variable block, it is also used to set the variable
+        *args:      Arguments to be passed to the function
+        **kwargs:   Named arguments to be passed to the function
+    """
+    name = _get_name_if_not_chosen(name, blocks.Callable)
+    block = blocks.Callable(request=blocks.CURRENT, value=value, function=function, var_args=var_args,
+                            fuzzable=fuzzable, name=name, *args, **kwargs)
+    blocks.CURRENT.push(block)
+
+# --------------------------------------------------------------- #
+
+
 def s_repeat(block_name: str, min_reps: int = 0, max_reps: int = None, step: int = 1, variable_name: str = None,
              include: bool = False, fuzzable: bool = True, name: str = None):
     """
@@ -235,6 +259,30 @@ def s_repeat(block_name: str, min_reps: int = 0, max_reps: int = None, step: int
     repeat = blocks.Repeat(block_name, blocks.CURRENT, min_reps=min_reps, max_reps=max_reps, step=step,
                            variable_name=variable_name, include=include, fuzzable=fuzzable, name=name)
     blocks.CURRENT.push(repeat)
+
+# --------------------------------------------------------------- #
+
+
+def s_wrap(value: bytes, prefix: bytes, suffix: bytes, min_reps: int, max_reps: int,
+           step: int = 1, fuzzable: bool = True, name: str = None):
+    """
+    Wrap the contents of the specified value repeating the prefix and suffix from min_reps to max_reps counting by step. By
+    default renders to value. This modifier can be useful to find bugs with recursive functions.
+
+    Args:
+        value:          String value
+        prefix:         Value to add before the value
+        suffix:         Value to add after the value
+        min_reps:       Minimum number of block repetitions
+        max_reps:       Maximum number of block repetitions
+        step:           (Optional, def=1) Step count between min and max reps
+        fuzzable:       (Optional, def=True) Enable/disable fuzzing of this primitive
+        name:           (Optional, def=None) Specifying a name gives you direct access to a primitive
+    """
+    name = _get_name_if_not_chosen(name, blocks.Wrap)
+    wrap = blocks.Wrap(value=value, prefix=prefix, suffix=suffix, min_reps=min_reps, max_reps=max_reps, step=step,
+                       fuzzable=fuzzable, name=name)
+    blocks.CURRENT.push(wrap)
 
 # --------------------------------------------------------------- #
 
@@ -511,6 +559,18 @@ def s_delim(value: bytes, fuzzable: bool = True, name: str = None):
 
 
 def s_group(value: bytes, values: List[bytes], name: str = None):
+    """
+    This primitive represents a list of static values, stepping through each one on mutation. You can tie a block
+    to a group primitive to specify that the block should cycle through all possible mutations for *each* value
+    within the group. The group primitive is useful for example for representing a list of valid opcodes.
+
+    If you are using the group with a block then the group must come before the block that uses it.
+
+    Args:
+        value:      Default value
+        values:     List of values to be mutated over
+        name:       The name of the group (used with a block if required)
+    """
     name = _get_name_if_not_chosen(name, primitives.Group)
     group = primitives.Group(value, values, name=name)
     blocks.CURRENT.push(group)

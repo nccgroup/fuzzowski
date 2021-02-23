@@ -29,12 +29,12 @@ def test_testcase1():
 
     i = 0
     target = Target(connection=SocketConnection('127.0.0.1',
-                             1337,
-                             proto='tcp',
-                             bind=31337,
-                             send_timeout=5.0,
-                             recv_timeout=5.0
-                             ))
+                                                1337,
+                                                protocol='tcp',
+                                                bind=31337,
+                                                send_timeout=5.0,
+                                                recv_timeout=5.0
+                                                ))
     session = Session(target=target)
     session.connect(s_get('testcaserequest1'))
     session.connect(s_get('testcaserequest1'), s_get('testcaserequest2'))

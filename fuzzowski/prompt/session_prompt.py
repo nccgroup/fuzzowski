@@ -89,7 +89,10 @@ class SessionPrompt(CommandPrompt):
                 'desc': 'Mark test case as crash. Saving the poc in the results folder',
                 'exec': self._cmd_addcrash
             },
-
+            'help': {
+                'desc': 'Show list of available commands',
+                'exec': self._cmd_help
+            },
         })
         return commands
 
@@ -397,6 +400,15 @@ class SessionPrompt(CommandPrompt):
             with open(poc_filename, 'w') as f:
                 f.write(poc_code)
         self.session.load_session_state(session_state)
+
+    # --------------------------------------------------------------- #
+
+    def _cmd_help(self, tokens):
+        self._print_color("gold", "Available Commands:-")
+        available_commands = self.get_commands()
+        for cmd in available_commands:
+            self._print_color("lightgreen", f'\t{cmd}:')
+            self._print_color("gold", f"\t\t\t{available_commands[cmd]['desc']}")
 
     # --------------------------------------------------------------- #
 
