@@ -13,6 +13,8 @@ from fuzzowski.constants import LITTLE_ENDIAN, BIG_ENDIAN
     (255, 8, BIG_ENDIAN, b'\xff'),
     (255, 16, LITTLE_ENDIAN, b'\xff\x00'),
     (255, 16, BIG_ENDIAN, b'\x00\xff'),
+    (30, 24, BIG_ENDIAN, b'\x00\x00\x1e'),
+    (30, 24, LITTLE_ENDIAN, b'\x1e\x00\x00'),
 ])
 def test_bit_fields(value, width, endian, rendered):
     assert BitField(value, width=width, endian=endian).render() == rendered

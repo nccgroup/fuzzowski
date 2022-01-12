@@ -89,6 +89,8 @@ def test_sizes_formats(mutation_idx, size_int, size_value, test_string, length, 
     # length    output_format  endian   inclusive   mutation_idx,   size_value
     (2,         'binary',       '<',    False,      1,              b'\x0a\x00'),  # test_string value is b'5test'
     (2,         'binary',       '<',    True,       1,              b'\x0c\x00'),  # test_string value is b'5test'
+    (4,         'binary',       '>',    True,       1,              b'\x00\x00\x00\x0e'),  # test_string value is b'5test'
+#    (4,         'binary',       '>',    True,       1,              b'\x00\x00\x00\x0e'),  # test_string value is b'5test'
     (2,         'ascii',        '<',    False,      1,              b'10'),
     (2,         'ascii',        '<',    True,       1,              b'12'),
     (2,         'ascii',        '<',    True,       4,              b'0'),  # First size mutation, value should be 0
