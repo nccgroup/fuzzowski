@@ -141,8 +141,8 @@ class MODBUS(IFuzzer):
                 s_word(0x0000,name='starting_address')
                 s_dword(0x0000,name='byte_count')
                 s_size("outputsValue", length=8)
-                with s_block("outputs"):
-                    s_word(0x00,name='outputsValue')
+                with s_block("outputsValue"):
+                    s_word(0x00,name='outputs_value')
         # --------------------------------------------------------------- #
 
         # --------------- Preset Multiple Registers (FC=16) ------------- #
@@ -156,10 +156,10 @@ class MODBUS(IFuzzer):
                 s_byte(0x10,name='func_code',fuzzable=False)
                 s_word(0x0000,name='starting_address')
                 s_dword(0x0000,name='byte_count')
-                s_size("outputsValue",length=16)
-                s_size("outputsValue2", length=8)
-                with s_block("outputs"):
-                    s_dword(0x0000,name='outputsValue3')
+                s_size("outputsValue", length=16, name="outputsValue_1")
+                s_size("outputsValue", length=8, name="outputsValue_2")
+                with s_block("outputsValue"):
+                    s_dword(0x0000,name='outputs_value')
         # --------------------------------------------------------------- #
 
 
@@ -263,10 +263,11 @@ class MODBUS(IFuzzer):
                 s_word(0x0000,name='readStartingAddr')
                 s_word(0x0001,name='readQuantityRegisters')
                 s_word(0x0000,name='writeStartingAddr')
-                s_size('writeQuantityRegisters',length=16,endian='>',name="writeQuantityRegisters")
-                s_size('writeQuantityRegisters', length=8, endian='>',name="byteCount",math=lambda x:2*x)
-                with s_block('writeQuantityRegisters_block'):
+                s_size('writeQuantityRegisters', length=16, endian='>')
+                s_size('writeQuantityRegisters', length=8, endian='>', name="byteCount", math=lambda x:2*x)
+                with s_block('writeQuantityRegisters'):
                     s_size('modbus_head',length=2)
+
         # --------------------------------------------------------------- #
 
 
@@ -316,5 +317,6 @@ class MODBUS(IFuzzer):
         session.connect(s_get('WriteFileSub'))
         session.connect(s_get('WriteFileRecord'))
         session.connect(s_get('MaskWriteRegister'))
-        session.connect(s_get('ReadWriteMultipleRegisters'))
+        #session.connect(s_get('ReadWriteMultipleRegisters'))
+
 
