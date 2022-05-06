@@ -1,6 +1,7 @@
 from functools import reduce
 from itertools import groupby
 import ctypes
+import ctypes.util
 import errno
 import os
 import platform
@@ -142,7 +143,16 @@ def get_max_udp_size():
         if mac:
             lib = ctypes.cdll.LoadLibrary('libc.dylib')
         elif linux:
-            lib = ctypes.cdll.LoadLibrary('libc.so.6')
+            libc_paths = ('libc.so.6', 'libc.so', 'libc.a',
+                          ctypes.util.find_library('c'))
+            for libc_path in libc_paths:
+                try:
+                    lib = ctypes.cdll.LoadLibrary(libc_path)
+                    break
+                except (IOError, OSError):
+                    continue
+            if not lib:
+                raise Error("Unable to locate libc")
         sol_socket = ctypes.c_int(socket.SOL_SOCKET)
         opt = ctypes.c_int(socket.SO_SNDBUF)
 
