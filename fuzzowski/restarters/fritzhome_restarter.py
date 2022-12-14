@@ -15,6 +15,7 @@ class FritzhomeRestarter(IRestarter):
         self.fritz.login()
         self.device = self.fritz.get_device_by_ain(ain)
         self.logger.log_info(f"Device: {self.device}")
+        self.fritz.logout()
 
     @staticmethod
     def name() -> str:
@@ -25,10 +26,12 @@ class FritzhomeRestarter(IRestarter):
         return 'Restart the target by toggling a Fritz!DECT smart plug'
 
     def restart(self, *args, **kwargs) -> str or None:
+        self.fritz.login()
         self.logger.log_info("Restarting target")
         switch_state = self.device.set_switch_state_toggle()
         self.logger.log_info(f"Switch state: {switch_state}")
         sleep(1)
         switch_state = self.device.set_switch_state_toggle()
         self.logger.log_info(f"Switch state: {switch_state}")
+        self.fritz.logout()
         return "Restarted target"
