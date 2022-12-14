@@ -77,7 +77,7 @@ class modbusMonitor(IMonitor):
                     elif hex(Exception_code) == '0x1':
                       self.logger.log_warn(f"Getting MODBUS device information: Illegal function")
                     else:
-                      self.logger.log_warn(f"Getting MODBUS device information warning")
+                      self.logger.log_warn(f"Getting MODBUS device information warning code: {hex(Exception_code)}")
                 else:
                   self.logger.log_warn(f"Getting MODBUS data error")
 
