@@ -45,7 +45,7 @@ class MODBUS(IFuzzer):
             s_byte(0xff,name='unit Identifier',fuzzable=False)
             with s_block('pdu'):
                 s_byte(0x01,name='funcCode read coil memory',fuzzable=False)
-                s_word(0x0000,name='start address')
+                s_word(0x0000,name='start_address')
                 s_word(0x0000,name='quantity')
         
 
@@ -57,7 +57,7 @@ class MODBUS(IFuzzer):
             s_byte(0xff,name='unit Identifier',fuzzable=False)
             with s_block('read_holding_registers_block'):
                 s_byte(0x01,name='read_holding_registers')
-                s_word(0x0000,name='start address')
+                s_word(0x0000,name='start_address')
                 s_word(0x0000,name='quantity')
         # --------------------------------------------------------------- #
 
