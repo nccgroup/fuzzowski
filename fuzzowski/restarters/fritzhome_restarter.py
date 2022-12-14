@@ -29,9 +29,9 @@ class FritzhomeRestarter(IRestarter):
         self.fritz.login()
         self.logger.log_info("Restarting target")
         switch_state = self.device.set_switch_state_toggle()
-        self.logger.log_info(f"Switch state: {switch_state}")
         sleep(1)
-        switch_state = self.device.set_switch_state_toggle()
+        while switch_state == False:
+            switch_state = self.device.set_switch_state_toggle()
         self.logger.log_info(f"Switch state: {switch_state}")
         self.fritz.logout()
         return "Restarted target"
