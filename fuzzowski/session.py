@@ -226,6 +226,7 @@ class Session(object):
             if self.opts.restart_interval > 0 and self.test_case.id % self.opts.restart_interval == 0:
                 self.logger.open_test_step(f"Restart interval of {self.opts.restart_interval} reached")
                 self.restart_target()
+                self.wait_until_target_recovered(self.test_case)
 
     # --------------------------------------------------------------- #
 
@@ -544,6 +545,31 @@ class Session(object):
     # ================================================================#
     # Restarters, Monitors                                            #
     # ================================================================#
+
+    def wait_until_target_recovered(self, case):
+        """
+        Returns: bool indicating if the target has recovered (False happens if the session is paused before that)
+        """
+        # When the connection fails, we want to pause the fuzzer, save the packets,etc
+        recovered = False
+        if self.is_paused:
+            raise exception.FuzzowskiPaused('Paused while waiting for recovery')
+        self.logger.open_test_step('Waiting for target recovery')
+        while not recovered:
+            if self.is_paused:
+                raise exception.FuzzowskiPaused('Paused while waiting for recovery')
+            self.logger.log_info(f"Target seems down. Sleeping for {self.opts.restart_sleep_time} seconds")
+            time.sleep(self.opts.restart_sleep_time)
+            try:
+                case.test()
+                self.logger.log_info("Target recovered! Continuing fuzzing")
+                recovered = True
+            except exception.FuzzowskiTargetConnectionFailedError:
+                self.logger.log_info("Target still down")
+            except Exception as e:
+                self.logger.log_info("Target still down")
+                self.logger.log_info("Exception {}: {}".format(type(e).__name__, str(e)))
+        return recovered
 
     def restart_target(self):
         """ It will call the restart() command of the IRestarter instance, if a restarter module was set"""

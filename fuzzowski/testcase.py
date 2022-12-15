@@ -134,7 +134,7 @@ class TestCase(object):
                     self.session.add_last_case_as_suspect(e)
                     # raise
                     self.session.restart_target()  # Restart the target if a restarter was set
-                    recovered = self.wait_until_target_recovered()  # Wait for target to recover
+                    recovered = self.session.wait_until_target_recovered(self)  # Wait for target to recover
                     if recovered:
                         # target.open()  # Open a new connection, as the last one will be closed
                         self.open_fuzzing_target()
@@ -240,33 +240,6 @@ class TestCase(object):
                 else:
                     self.logger.log_info(msg)
                 raise exception.FuzzowskiTestCaseAborted(str(e))
-
-    # --------------------------------------------------------------- #
-
-    def wait_until_target_recovered(self):
-        """
-        Returns: bool indicating if the target has recovered (False happens if the session is paused before that)
-        """
-        # When the connection fails, we want to pause the fuzzer, save the packets,etc
-        recovered = False
-        if self.session.is_paused:
-            raise exception.FuzzowskiPaused('Paused while waiting for recovery')
-        self.logger.open_test_step('Waiting for target recovery')
-        while not recovered:
-            if self.session.is_paused:
-                raise exception.FuzzowskiPaused('Paused while waiting for recovery')
-            self.logger.log_info(f"Target seems down. Sleeping for {self.session.opts.restart_sleep_time} seconds")
-            time.sleep(self.session.opts.restart_sleep_time)
-            try:
-                self.test()
-                self.logger.log_info("Target recovered! Continuing fuzzing")
-                recovered = True
-            except exception.FuzzowskiTargetConnectionFailedError:
-                self.logger.log_info("Target still down")
-            except Exception as e:
-                self.logger.log_info("Target still down")
-                self.logger.log_info("Exception {}: {}".format(type(e).__name__, str(e)))
-        return recovered
 
     # --------------------------------------------------------------- #
 
