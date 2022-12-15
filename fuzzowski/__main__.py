@@ -71,7 +71,7 @@ class Fuzzowski(object):
 
         self.session = Session(session_filename=self.session_filename,
                                sleep_time=self.args.sleep_time,
-                               # restart_interval=0,
+                               restart_interval=self.args.restart_interval,
                                crash_threshold_request=self.args.crash_threshold_request,
                                crash_threshold_element=self.args.crash_threshold_element,
                                restart_sleep_time=self.args.restart_sleep_time,
@@ -144,6 +144,7 @@ class Fuzzowski(object):
         conn_grp.add_argument('-tn', '--transmit_full_path', dest='transmit_full_path',
                               help="Transmit the next node in the graph of the fuzzed node",
                               action='store_true')
+        conn_grp.add_argument('-ri', '--restart-interval', dest='restart_interval', type=int, default=0, help="Restart the target after n requests")
         recv_grp = self.parser.add_argument_group('RECV() Options')
         recv_grp.add_argument('-nr', '--no-recv', dest='receive_data_after_each_request',
                               help="Do not recv() in the socket after each send",
