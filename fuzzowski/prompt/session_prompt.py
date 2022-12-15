@@ -7,6 +7,7 @@ from prompt_toolkit.styles import Style, merge_styles
 
 from fuzzowski import constants
 from fuzzowski import exception
+from fuzzowski.testcase import TestCase
 
 from .prompt import CommandPrompt
 
@@ -299,7 +300,16 @@ class SessionPrompt(CommandPrompt):
         except IndexError:  # No index specified, Show all suspects
             for suspect_id, suspect in self.session.suspects.items():
                 if suspect is not None:
-                    print(suspect.info())
+                    if isinstance(suspect, TestCase):
+                        print(suspect.info())
+                    else:
+                        text = (
+                            f'Test Case {suspect["id"]} {"(Disabled)" if suspect["disabled"] else ""}\n' \
+                            f'  Path: {suspect["path"]}\n' \
+                            f'  Mutant: {suspect["mutant"]}\n' \
+                            f'  Errors: {suspect["errors"]}'
+                            )
+                        print(text)
                 else:
                     print(f'Test Case {suspect_id}')
             return

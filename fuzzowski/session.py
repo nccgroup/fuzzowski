@@ -621,10 +621,16 @@ class Session(object):
 
         @see self.load_session_state()
         """
+        sus = []
+        for value in self.suspects.values():
+            if isinstance(value, TestCase):
+                sus.append(value.export())
+            else:
+                sus.append(value)
         state = {
             "mutant_index": self.mutant_index,
-            "suspect_ids": [key for key in self.suspects.keys()],  # TODO: Save also the contents of the suspect
-            "disabled_names": [key for key in self.disabled_elements.keys()]
+            "suspects": sus,
+            "disabled_elements": [key for key in self.disabled_elements.keys()]
             # TODO: crashes, last recv...
         }
         return state
@@ -640,10 +646,12 @@ class Session(object):
         @see self.save_session_state()
         """
         self.goto(state['mutant_index'])
-        for suspect_id in state['suspect_ids']:
-            if suspect_id not in self.suspects:
-                self.suspects[suspect_id] = None  # TODO: Adding as empty for now
-        for mutant_name in state['disabled_names']:
+        print(state)
+        for i, suspect in enumerate(state['suspects']):
+            id = suspect['id']
+            if id not in self.suspects:
+                self.suspects[id] = state['suspects'][i]
+        for mutant_name in state['disabled_elements']:
             try:
                 self.disable_by_path_name(mutant_name, disable=True)
             except exception.FuzzowskiRuntimeError:

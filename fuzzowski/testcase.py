@@ -271,6 +271,16 @@ class TestCase(object):
                f'  Path: {self.path_name}\n' \
                f'  Mutant: {self.mutant_name}\n' \
                f'  Errors: {self.errors}'
+    
+    def export(self):
+        """Returns a dictionary with the test case information"""
+        return {
+            'id': self.id,
+            'path': self.path_name,
+            'mutant': self.mutant_name,
+            'errors': self.errors,
+            'disabled': self.disabled
+        }
 
     def _callback_current_node(self, node, edge, original=False):
         """Execute callback preceding current node.
